@@ -279,6 +279,17 @@ void HeapManager_Deallocate( HeapManager* manager, void* ptr )
     }
 }
 
+void HeapManager_Finalize( HeapManager* manager )
+{
+    assert( manager );
+
+    for( HeapChunk* chunk = manager->inUseChunks.head; chunk != NULL; chunk = chunk->next )
+    {
+        HeapChunk_Release( chunk, manager->onReleaseCb );
+    }
+    memset( manager, 0, sizeof( *manager ) );
+}
+
 void HeapManager_DumpChunks( HeapManager* manager )
 {
     HeapChunk* chunk = manager->avaliableChunks.head;

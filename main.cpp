@@ -40,6 +40,7 @@ int main()
 
     HeapManager_Deallocate( manager, ptr2 );
     HeapManager_DumpChunks( manager );
+    HeapManager_Finalize( manager );
 
     return 0;
 }

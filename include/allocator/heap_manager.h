@@ -1,5 +1,6 @@
 #pragma once
 
+#include <pthread.h>
 #include <allocator/heap_chunk.h>
 #include <allocator/helper.h>
 
@@ -73,6 +74,17 @@ void HeapManager_Deallocate( HeapManager* manager, void* ptr );
  * @param[in] manager HeapManager.
  */
 void HeapManager_DumpChunks( HeapManager* manager );
+
+/**
+ * @brief Finalize HeapManager.
+ * 
+ * Function releases all allocated memory and 
+ * zeroize memory. After call of this function
+ * HeapManager becomes invalid.
+ * 
+ * @param[in] manager Heap manager.
+ */
+void HeapManager_Finalize( HeapManager* manager );
 
 #ifdef __cplusplus
 }
