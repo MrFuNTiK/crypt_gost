@@ -10,6 +10,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${RESULT_DIRECTORY}/lib)
 include_directories(include crypt_gost/internal_include)
 add_compile_options(-Wall -Wextra -Werror)
 
+option(ENABLE_TEST ON)
+
 add_subdirectory(crypt_gost)
 add_executable(main main.cpp)
 target_link_libraries(main allocator)

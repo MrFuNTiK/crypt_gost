@@ -20,10 +20,7 @@ HeapChunk* HeapChunk_CreateAt( void* ptr, size_t chunkSize, size_t alignment )
 
     void* memPtr = ptr + sizeof( HeapChunk );
 
-    if( alignment )
-    {
-        memPtr = SHIFT_PTR_RIGHT( memPtr, alignment - ( (size_t)memPtr % alignment ) );
-    }
+    memPtr = SHIFT_PTR_UPTO_ALIGNMENT( memPtr, alignment );
     chunk->region.ptr = memPtr;
     chunk->region.size = chunkSize;
     HeapChunk_AddMarkers( chunk );
@@ -60,7 +57,7 @@ int HeapChunk_CheckSize( size_t requiredChunkSize, size_t alignment, void* ptr, 
 static size_t _HeapChunk_TotalMemoryInUse( void* ptr, size_t chunkSize, size_t alignment )
 {
     size_t totalSize = sizeof( HeapChunk ) + chunkSize;
-    return !alignment ? totalSize : totalSize + alignment - ( (size_t)ptr % alignment );
+    return totalSize + DIFF_UPTO_ALIGNMENT( SHIFT_PTR_RIGHT( ptr, sizeof( HeapChunk ) ), alignment );
 }
 
 HeapChunk* HeapChunk_CutFromBegin( HeapChunk** chunk, size_t size, size_t alignment )
@@ -80,10 +77,6 @@ HeapChunk* HeapChunk_CutFromBegin( HeapChunk** chunk, size_t size, size_t alignm
 
     HeapChunk* rightChunk = (HeapChunk*)SHIFT_PTR_RIGHT( *chunk, totalUsedSize );
 
-    if( alignment )
-    {
-        rightChunk = ( HeapChunk* )SHIFT_PTR_RIGHT( rightChunk, (size_t)rightChunk % alignment );
-    }
     // Shift chunk pointer from the beginning of chunk struct to struct size.
     rightChunk->region.ptr = SHIFT_PTR_RIGHT( rightChunk, sizeof( *rightChunk ) );
     rightChunk->region.size = PTR_DIFF( rightChunk->region.ptr, rightBorder );

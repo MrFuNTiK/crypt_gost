@@ -8,7 +8,7 @@
 
 #include <assert.h>
 
-#define CHUNKS_COLLECT_FACTOR   3
+#define CHUNKS_COLLECT_FACTOR   1
 
 static inline void _HeapManager_AppendInUseChunk( HeapManager* manager, HeapChunk* chunk );
 static inline void _HeapManager_AppendAvaliableChunk( HeapManager* manager, HeapChunk* chunk );
@@ -222,6 +222,9 @@ void* HeapManager_Allocate( HeapManager* manager, size_t size, size_t alignment 
     }
 
     _HeapManager_AppendInUseChunk( manager, newAllocated );
+    assert( alignment ?
+            (size_t)(newAllocated->region.ptr) % alignment == 0 :
+            1 );
     return newAllocated->region.ptr;
 }
 
@@ -238,7 +241,7 @@ void HeapManager_Deallocate( HeapManager* manager, void* ptr )
         (size_t)ptr > (size_t)manager->heap + manager->heapSize )
     {
         // TODO: SEG_FAULT?
-        printf( "NOT OF THIS HEAP" );
+        // printf( "NOT OF THIS HEAP" );
         return;
     }
 
@@ -250,7 +253,6 @@ void HeapManager_Deallocate( HeapManager* manager, void* ptr )
      * allocated, the earlier it is deallocated.
      * 
      */
-
     for( ; chunk; chunk = chunk->prev )
     {
         if( chunk->region.ptr == ptr )
@@ -263,11 +265,9 @@ void HeapManager_Deallocate( HeapManager* manager, void* ptr )
     if( !found )
     {
         // TODO: SEG_FAULT?
-        printf( "NOT FOUND\n" );
+        // printf( "NOT FOUND\n" );
         return;
     }
-
-    printf( "found\n" );
 
     _HeapManager_ReleaseInUseChunk( manager, found );
     HeapChunk_Release( found, manager->onReleaseCb );
@@ -321,8 +321,10 @@ void HeapManager_DumpChunks( HeapManager* manager )
     {
         if( !chunk ) break;
         printf( "Chunk #%d:\n", ctr );
+        printf( "Chunk start:\t%p\n", chunk );
         printf( "\tptr:\t%p\n", chunk->region.ptr );
         printf( "\tsize:\t%ld\n", chunk->region.size );
+        printf( "Chunk end:\t%p\n", SHIFT_PTR_RIGHT( chunk->region.ptr, chunk->region.size ) );
         ++ctr;
     }
     printf( "##### END CHUNKS DUMP #####\n\n" );
