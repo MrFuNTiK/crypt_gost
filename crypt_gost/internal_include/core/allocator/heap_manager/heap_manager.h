@@ -1,8 +1,7 @@
 #pragma once
 
-#include <pthread.h>
-#include <allocator/heap_chunk.h>
-#include <allocator/helper.h>
+#include <core/allocator/heap_manager/heap_chunk.h>
+#include <core/allocator/heap_manager/helper.h>
 
 /**
  * @brief List of chunks, managed by HeapManager.

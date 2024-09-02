@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include <allocator/helper.h>
+#include <core/allocator/heap_manager/helper.h>
 
 /**
  * @brief Memory region.

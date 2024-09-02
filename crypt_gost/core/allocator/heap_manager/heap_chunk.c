@@ -2,7 +2,7 @@
 #include <assert.h>
 #include <string.h>
 
-#include <allocator/heap_chunk.h>
+#include <core/allocator/heap_manager/heap_chunk.h>
 
 #include "ptr_helper.h"
 

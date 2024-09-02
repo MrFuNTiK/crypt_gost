@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include <allocator/heap_manager.h>
+#include <core/allocator/heap_manager/heap_manager.h>
 #include "ptr_helper.h"
 
 #include <assert.h>

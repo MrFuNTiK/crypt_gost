@@ -2,14 +2,14 @@
 #include <tuple>
 #include <functional>
 
-#include <allocator/heap_allocator.hpp>
-#include <allocator/stack_allocator.hpp>
+#include <core/allocator/heap_allocator.hpp>
+#include <core/allocator/stack_allocator.hpp>
 
 #include <gtest/gtest.h>
 
-using namespace crypt_gost::allocator;
+using namespace crypt_gost::core::allocator;
 
-typedef std::function< I_Allocator&(void)> AllocGetter;
+typedef std::function< I_Allocator&( void ) > AllocGetter;
 using test_param_t = std::tuple< AllocGetter, size_t >;
 
 void RandomMemory( std::vector<unsigned char>& buf )
@@ -94,8 +94,9 @@ TEST_P( AllocatorTest, AllocatorTesting )
 
 INSTANTIATE_TEST_CASE_P(CoreTest, AllocatorTest,
     ::testing::Combine(
-        ::testing::Values(HeapAllocator::GetAllocator,
-                          StackAllocator::GetAllocator
+        ::testing::Values(HeapAllocator::GetInstance,
+                          StackAllocator::GetInstance
                           ),
-        ::testing::Values(0, 8,16, 32, 64)
-    ));
+        ::testing::Values(0, 8, 16, 32, 64)
+    )
+);

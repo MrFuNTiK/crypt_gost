@@ -1,7 +1,7 @@
 #include <stdexcept>
-#include <allocator/stack_allocator.hpp>
+#include <core/allocator/stack_allocator.hpp>
 
-using namespace crypt_gost::allocator;
+using namespace crypt_gost::core::allocator;
 
 StackAllocator::StackAllocator()
 {
@@ -17,7 +17,7 @@ StackAllocator::~StackAllocator()
     HeapManager_Finalize( manager );
 }
 
-StackAllocator& StackAllocator::GetAllocator()
+StackAllocator& StackAllocator::GetInstance()
 {
     static StackAllocator allocator;
     return allocator;

@@ -1,25 +1,42 @@
 #pragma once
 
-#include <stdlib.h>
+#include <cstdlib>
 
-namespace crypt_gost
-{
+namespace crypt_gost {
 
-namespace core
-{
+namespace core {
 
-namespace allocator
-{
+namespace allocator {
 
+/**
+ * @brief Allocator interface.
+ * 
+ */
 class I_Allocator
 {
 public:
-    virtual inline void* Allocate(size_t numBytes ) = 0;
-    virtual inline void Deallocate(void* bytes, size_t numBytes = 0 ) = 0;
+    /**
+     * @brief Allocate memory.
+     * 
+     * @param[in] size Minimal size of memory to allocate (bytes).
+     * @param[in] alignment Alignment of allocated memory.
+     * 
+     * @return void* Allocated memory.
+     * @retval !nullptr - In case of success.
+     * @retval nullptr - In case of error.
+     */
+    virtual void* Allocate( size_t size, size_t alignment = 0 ) noexcept = 0;
+
+    /**
+     * @brief Deallocate memory.
+     * 
+     * @param[in] ptr Pointer to allocated memory. 
+     */
+    virtual void Deallocate( void* ptr ) noexcept = 0;
 };
 
-} // namespace allocator
-
 } // namespace core
+
+} // namespace allocator
 
 } // namespace crypt_gost

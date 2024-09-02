@@ -1,9 +1,9 @@
 #include <stdlib.h>
-#include <allocator/heap_allocator.hpp>
+#include <core/allocator/heap_allocator.hpp>
 
-using namespace crypt_gost::allocator;
+using namespace crypt_gost::core::allocator;
 
-HeapAllocator& HeapAllocator::GetAllocator()
+HeapAllocator& HeapAllocator::GetInstance()
 {
     static HeapAllocator allocator;
     return allocator;
