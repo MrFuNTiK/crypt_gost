@@ -1,6 +1,8 @@
 #include <iostream>
 #include <core/allocator/heap_manager/heap_manager.h>
 
+#include <core/math/math.hpp>
+
 int main()
 {
     unsigned char buffer [ 1024 ] = { 0 };
@@ -41,6 +43,10 @@ int main()
     HeapManager_Deallocate( manager, ptr2 );
     HeapManager_DumpChunks( manager );
     HeapManager_Finalize( manager );
+
+    crypt_gost::core::math::LongNumber<128> number1;
+    crypt_gost::core::math::LongNumber<128> number2;
+    crypt_gost::core::math::LongNumber<128> ret = number1 + number2;
 
     return 0;
 }
