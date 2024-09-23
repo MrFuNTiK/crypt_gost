@@ -1,5 +1,8 @@
 #pragma once
 
+#include <vector>
+#include <iostream>
+#include <iomanip>
 #include <cstdint>
 #include <cstring>
 #include <core/allocator/heap_allocator.hpp>
@@ -115,6 +118,36 @@ public:
         LongNumber ret(*this);
         ret += other;
         return ret;
+    }
+
+    LongNumber& operator^=( const LongNumber& other )
+    {
+        for( size_t i = 0; i < bytesSize_ / 4; ++i )
+        {
+            bytes_.u32[i] ^= other.bytes_.u32[i];
+        }
+        return *this;
+    }
+
+    LongNumber operator^( const LongNumber& other )
+    {
+        LongNumber ret(*this);
+        ret ^= other;
+        return ret;
+    }
+
+    friend std::ostream& operator<<( std::ostream& os, const LongNumber& number )
+    {
+        for( size_t i = 0; i < number.bytesSize_ - 1; ++i )
+        {
+            os << "0x" << std::setfill('0') << std::setw( 2 )
+               << std::hex << static_cast<int>(number.bytes_.u8[i])
+               << ", ";
+        }
+        os << "0x" << std::setfill('0') << std::setw( 2 )
+           << std::hex << static_cast<int>(number.bytes_.u8[number.bytesSize_-1])
+           << std::flush;
+        return os;
     }
 
 private:
