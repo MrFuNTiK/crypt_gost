@@ -48,7 +48,8 @@ int main()
     std::vector<uint8_t> bytes1{ 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01 };
     std::vector<uint8_t> bytes2{ 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02 };
     crypt_gost::core::math::LongNumber<128> number1( bytes1.data() );
-    crypt_gost::core::math::LongNumber<128> number2( bytes2.data() );
+    crypt_gost::core::math::LongNumber<128> number2 = number1;
+    number2 = crypt_gost::core::math::LongNumber<128>{bytes2.data()};
     std::cout << "Number1 = " << number1 << std::endl;
     std::cout << "Number2 = " << number2 << std::endl;
     crypt_gost::core::math::LongNumber<128> number3 = number1 ^ number2;

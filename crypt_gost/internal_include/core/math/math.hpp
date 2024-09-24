@@ -6,9 +6,7 @@
 #include <cstdint>
 #include <cstring>
 #include <core/allocator/heap_allocator.hpp>
-
-using namespace crypt_gost::core::allocator;
-using namespace crypt_gost::core;
+#include <core/math/mem_buf.hpp>
 
 namespace crypt_gost
 {
@@ -18,6 +16,9 @@ namespace core
 
 namespace math
 {
+
+using namespace crypt_gost::core::allocator;
+using namespace crypt_gost::core;
 
 namespace sfinae
 {
@@ -44,68 +45,49 @@ public:
     LongNumber( uint8_t* bytes = nullptr,
                 I_Allocator& alloc = HeapAllocator::GetInstance() )
     : bytes_()
-    , bitSize_( bitSize )
-    , bytesSize_( bitSize / 8 )
-    , allocator_( alloc )
+    , buf_(bitSize/8, 4, alloc)
     {
-        bytes_.u8 = (uint8_t*)allocator_.Allocate( bytesSize_ );
-        if( !bytes_.u8 )
-        {
-            throw std::runtime_error( "Alloc failure" );
-        }
+        bytes_.u8 = static_cast<uint8_t*>(buf_.GetBuf());
 
         if( bytes )
         {
-            std::memcpy( bytes_.u8, bytes, bytesSize_ );
+            std::memcpy( bytes_.u8, bytes, bitSize / 8 );
         }
     };
 
-    ~LongNumber()
-    {
-        allocator_.Deallocate( bytes_.u8 );
-    };
+    ~LongNumber() = default;
 
     LongNumber( const LongNumber& other )
-        : bitSize_( other.bitSize_ )
-        , bytesSize_( other.bytesSize_ )
-        , allocator_( other.allocator_ )
+        : bytes_()
+        , buf_(other.buf_)
     {
-        bytes_.u8 = (uint8_t*)allocator_.Allocate( bytesSize_ );
-        if( !bytes_.u8 )
-        {
-            throw std::runtime_error( "Alloc failure" );
-        }
-        std::memcpy( bytes_.u8, other.bytes_.u8, bytesSize_ );
+        bytes_.u8 = static_cast<uint8_t*>(buf_.GetBuf());
     }
 
     LongNumber& operator=( const LongNumber& other )
     {
-        static_assert( bytesSize_ == other.bytesSize_ );
-
-        allocator_.Deallocate( bytes_.u8 );
-        allocator_ = other.allocator_;
-        bytes_.u8 = allocator_.Allocate( bytesSize_ );
-        if( !bytes_.u8 )
-        {
-            throw std::runtime_error( "Alloca failure" );
-        }
-        std::memcpy( bytes_.u8, other.bytes_.u8, bytesSize_ );
+        buf_ = other.buf_;
+        bytes_.u8 = static_cast<uint8_t*>(buf_.GetBuf());
         return *this;
     }
 
     LongNumber( LongNumber&& other )
-        : bytes_( other.bytes_ )
-        , bitSize_( other.bitSize_ )
-        , bytesSize_( other.bytesSize_ )
-        , allocator_( other.allocator_ )
+        : buf_(std::move(other.buf_))
     {
-        other.bytes_.u8 = nullptr;
+        bytes_.u8 = static_cast<uint8_t*>(buf_.GetBuf());
+    }
+
+    LongNumber& operator=( LongNumber&& other )
+    {
+        buf_ = std::move(other.buf_);
+        bytes_.u8 = static_cast<uint8_t*>(buf_.GetBuf());
+        return *this;
     }
 
     LongNumber& operator+=( const LongNumber& other )
     {
         bool carry = false;
-        for( size_t i = 0; i < bytesSize_ / 4; ++i )
+        for( size_t i = 0; i < bitSize / 8 / 4; ++i )
         {
             bytes_.u32[i] += other.bytes_.u32[i] + carry;
             carry = bytes_.u32[i] < other.bytes_.u32[i];
@@ -122,7 +104,7 @@ public:
 
     LongNumber& operator^=( const LongNumber& other )
     {
-        for( size_t i = 0; i < bytesSize_ / 4; ++i )
+        for( size_t i = 0; i < bitSize / 8 / 4; ++i )
         {
             bytes_.u32[i] ^= other.bytes_.u32[i];
         }
@@ -138,16 +120,22 @@ public:
 
     friend std::ostream& operator<<( std::ostream& os, const LongNumber& number )
     {
-        for( size_t i = 0; i < number.bytesSize_ - 1; ++i )
+        for( size_t i = 0; i < number.BitSize() / 8 - 1; ++i )
         {
             os << "0x" << std::setfill('0') << std::setw( 2 )
                << std::hex << static_cast<int>(number.bytes_.u8[i])
                << ", ";
         }
         os << "0x" << std::setfill('0') << std::setw( 2 )
-           << std::hex << static_cast<int>(number.bytes_.u8[number.bytesSize_-1])
+           << std::hex << static_cast<int>(number.bytes_.u8[number.BitSize()/8-1])
            << std::flush;
         return os;
+    }
+
+private:
+    inline size_t BitSize() const noexcept
+    {
+        return bitSize;
     }
 
 private:
@@ -159,9 +147,7 @@ private:
     };
 
     Bytes bytes_;
-    const size_t bitSize_;
-    const size_t bytesSize_;
-    crypt_gost::core::allocator::I_Allocator& allocator_;
+    util::MemBuf buf_;
 };
 
 
