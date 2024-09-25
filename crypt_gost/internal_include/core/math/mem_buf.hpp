@@ -22,12 +22,12 @@ public:
         , alignment_(alignment)
         , buf_(alloc.Allocate(size, alignment))
         , alloc_(alloc)
+    {
+        if( !buf_ )
         {
-            if( !buf_ )
-            {
-                throw std::runtime_error( "Malloc failure" );
-            }
-        };
+            throw std::runtime_error( "Malloc failure" );
+        }
+    };
 
     MemBuf(const MemBuf& other) : MemBuf(other.size_, other.alignment_, other.alloc_)
     {
@@ -85,7 +85,7 @@ public:
     }
 
 public:
-    inline void* GetBuf()
+    inline void* GetBuf() const noexcept
     {
         return buf_;
     }

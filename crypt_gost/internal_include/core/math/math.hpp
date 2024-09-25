@@ -84,7 +84,7 @@ public:
         return *this;
     }
 
-    LongNumber& operator+=( const LongNumber& other )
+    LongNumber& operator+=( const LongNumber& other ) noexcept
     {
         bool carry = false;
         for( size_t i = 0; i < bitSize / 8 / 4; ++i )
@@ -95,14 +95,14 @@ public:
         return *this;
     }
 
-    LongNumber operator+( const LongNumber& other )
+    LongNumber operator+( const LongNumber& other ) const
     {
         LongNumber ret(*this);
         ret += other;
         return ret;
     }
 
-    LongNumber& operator^=( const LongNumber& other )
+    LongNumber& operator^=( const LongNumber& other ) noexcept
     {
         for( size_t i = 0; i < bitSize / 8 / 4; ++i )
         {
@@ -111,7 +111,7 @@ public:
         return *this;
     }
 
-    LongNumber operator^( const LongNumber& other )
+    LongNumber operator^( const LongNumber& other ) const
     {
         LongNumber ret(*this);
         ret ^= other;
