@@ -193,7 +193,7 @@ public:
         LongNumber ret;
         LongNumber tmp(other);
 
-        for( size_t i = 0; i < traits_.NUMBER_BIT_SIZE; ++i )
+        for( size_t i = traits_.NUMBER_BIT_SIZE - 1; i != std::numeric_limits<size_t>::max(); --i )
         {
             if( CheckBit(i) )
             {
