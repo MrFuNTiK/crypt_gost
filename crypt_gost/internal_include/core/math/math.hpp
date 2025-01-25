@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <cstring>
 #include <core/allocator/heap_allocator.hpp>
-#include <core/math/mem_buf.hpp>
+#include <core/util/mem_buf.hpp>
 
 #include <core/util/traits.hpp>
 
