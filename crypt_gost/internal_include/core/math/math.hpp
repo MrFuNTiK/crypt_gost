@@ -112,8 +112,7 @@ public:
     {
         bool carry = false;
         const bool isLittleEndian = traits::IsLittleEndian();
-        const size_t TOTAL_WORDS_NUM = bitSize / traits::BitsNumberOf(bytes_.word[0]);
-        for( size_t i = TOTAL_WORDS_NUM - 1; i != std::numeric_limits<size_t>::max(); --i )
+        for( size_t i = traits_.COUNT_OF_WORDS - 1; i != std::numeric_limits<size_t>::max(); --i )
         {
             auto a = isLittleEndian ? traits::ChangeEndiannes( bytes_.word[i] ) : bytes_.word[i];
             auto b = isLittleEndian ? traits::ChangeEndiannes( other.bytes_.word[i] ) : other.bytes_.word[i];
@@ -133,7 +132,7 @@ public:
 
     LongNumber& operator^=( const LongNumber& other ) noexcept
     {
-        for( size_t i = 0; i < bitSize / 8 / 4; ++i )
+        for( size_t i = 0; i < traits_.COUNT_OF_WORDS; ++i )
         {
             bytes_.word[i] ^= other.bytes_.word[i];
         }
@@ -157,7 +156,6 @@ public:
 
         size_t wordsShift      = shift / traits::BitsNumberOf(bytes_.word[0]);
         size_t perWordBitShift = shift % traits::BitsNumberOf(bytes_.word[0]);
-        const size_t TOTAL_WORDS_NUM = bitSize / traits::BitsNumberOf(bytes_.word[0]);
 
         // memcpy for overlapping buffers is undefined behabiour, so copy in cycle.
         size_t readPos = wordsShift;
@@ -165,8 +163,8 @@ public:
 
         for( size_t i = 0; i < wordsShift; ++i)
         {
-            assert( readPos < TOTAL_WORDS_NUM );
-            assert( writePos < TOTAL_WORDS_NUM );
+            assert( readPos < traits_.COUNT_OF_WORDS );
+            assert( writePos < traits_.COUNT_OF_WORDS );
             bytes_.word[ writePos ] = bytes_.word[ readPos ];
             ++readPos;
             ++writePos;
@@ -174,17 +172,17 @@ public:
 
         size_t appendToRight = 0;
         const bool isLittleEndian = traits::IsLittleEndian();
-        for( size_t i = wordsShift; i < TOTAL_WORDS_NUM; ++i )
+        for( size_t i = wordsShift; i < traits_.COUNT_OF_WORDS; ++i )
         {
-            size_t wordIdx = TOTAL_WORDS_NUM - i - 1;
-            assert( wordIdx < TOTAL_WORDS_NUM );
+            size_t wordIdx = traits_.COUNT_OF_WORDS - i - 1;
+            assert( wordIdx < traits_.COUNT_OF_WORDS );
             uint32_t word = isLittleEndian ? traits::ChangeEndiannes(bytes_.word[ wordIdx ])
                                            : bytes_.word[ wordIdx ];
             uint32_t buf = word >> ( traits::BitsNumberOf(bytes_.word[0]) - perWordBitShift );
             uint32_t res = word << perWordBitShift;
             res |= appendToRight;
             bytes_.word[wordIdx] = isLittleEndian ? traits::ChangeEndiannes(res)
-                                                 : res;
+                                                  : res;
             appendToRight = buf;
         }
         return *this;
@@ -195,7 +193,7 @@ public:
         LongNumber ret;
         LongNumber tmp(other);
 
-        for( size_t i = 0; i < bitSize; ++i )
+        for( size_t i = 0; i < traits_.NUMBER_BIT_SIZE; ++i )
         {
             if( CheckBit(i) )
             {
@@ -208,7 +206,7 @@ public:
 
     friend std::ostream& operator<<( std::ostream& os, const LongNumber& number )
     {
-        for( size_t i = 0; i < number.BitSize() / 8 - 1; ++i )
+        for( size_t i = 0; i < number.traits_.COUNT_OF_BYTES - 1; ++i )
         {
             os << std::setfill('0') << std::setw( 2 )
                << std::hex << static_cast<int>(number.bytes_.byte[i])
@@ -246,7 +244,20 @@ private:
         T* word;
     };
 
+    struct Traits
+    {
+        size_t NUMBER_BIT_SIZE;
+        size_t COUNT_OF_BYTES;
+        size_t COUNT_OF_WORDS;
+        size_t WORD_BIT_SIZE;
+    };
+
+    static constexpr Traits traits_{ bitSize,
+                                     bitSize/8,
+                                     bitSize/traits::BitsNumberOf<T>(),
+                                     traits::BitsNumberOf<T>()};
     Bytes bytes_;
+
     util::MemBuf buf_;
 };
 
