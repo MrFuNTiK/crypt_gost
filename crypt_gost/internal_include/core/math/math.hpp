@@ -53,7 +53,7 @@ public:
     explicit LongNumber( const uint8_t* bytes,
                          I_Allocator& alloc = HeapAllocator::GetInstance() )
     : bytes_()
-    , buf_(bitSize/8, 4, alloc)
+    , buf_(bitSize/8, 8, alloc)
     {
         assert( bytes );
         bytes_.byte = static_cast<uint8_t*>(buf_.GetBuf());
@@ -64,7 +64,7 @@ public:
         }
     };
 
-    LongNumber( uint32_t value = 0,
+    LongNumber( T value = 0,
                 I_Allocator& alloc = HeapAllocator::GetInstance() )
     : bytes_()
     , buf_(bitSize/8, 4, alloc)
@@ -114,10 +114,10 @@ public:
         const bool isLittleEndian = traits::IsLittleEndian();
         for( size_t i = traits_.COUNT_OF_WORDS - 1; i != std::numeric_limits<size_t>::max(); --i )
         {
-            auto a = isLittleEndian ? traits::ChangeEndiannes( bytes_.word[i] ) : bytes_.word[i];
-            auto b = isLittleEndian ? traits::ChangeEndiannes( other.bytes_.word[i] ) : other.bytes_.word[i];
-            auto res = a + b + carry;
-            carry = res < a;
+            T a = isLittleEndian ? traits::ChangeEndiannes( bytes_.word[i] ) : bytes_.word[i];
+            T b = isLittleEndian ? traits::ChangeEndiannes( other.bytes_.word[i] ) : other.bytes_.word[i];
+            T res = a + b + carry;
+            carry = res < std::min(a, b) + carry;
             bytes_.word[i] = isLittleEndian ? traits::ChangeEndiannes( res ) : res;
         }
         return *this;
@@ -161,13 +161,17 @@ public:
         size_t readPos = wordsShift;
         size_t writePos = 0;
 
-        for( size_t i = 0; i < wordsShift; ++i)
+        for( size_t i = 0; i < traits_.COUNT_OF_WORDS - wordsShift; ++i)
         {
             assert( readPos < traits_.COUNT_OF_WORDS );
             assert( writePos < traits_.COUNT_OF_WORDS );
             bytes_.word[ writePos ] = bytes_.word[ readPos ];
             ++readPos;
             ++writePos;
+        }
+        for( size_t i = traits_.COUNT_OF_WORDS - wordsShift; i < traits_.COUNT_OF_WORDS; ++i )
+        {
+            bytes_.word[ i ] = 0;
         }
 
         size_t appendToRight = 0;
@@ -176,10 +180,10 @@ public:
         {
             size_t wordIdx = traits_.COUNT_OF_WORDS - i - 1;
             assert( wordIdx < traits_.COUNT_OF_WORDS );
-            uint32_t word = isLittleEndian ? traits::ChangeEndiannes(bytes_.word[ wordIdx ])
+            T word = isLittleEndian ? traits::ChangeEndiannes(bytes_.word[ wordIdx ])
                                            : bytes_.word[ wordIdx ];
-            uint32_t buf = word >> ( traits::BitsNumberOf(bytes_.word[0]) - perWordBitShift );
-            uint32_t res = word << perWordBitShift;
+            T buf = word >> ( traits_.WORD_BIT_SIZE - perWordBitShift );
+            T res = word << perWordBitShift;
             res |= appendToRight;
             bytes_.word[wordIdx] = isLittleEndian ? traits::ChangeEndiannes(res)
                                                   : res;

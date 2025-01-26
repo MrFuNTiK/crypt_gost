@@ -51,6 +51,8 @@ TEST_P(MathTest, Addition)
 
     auto sum = a + b;
     ASSERT_EQ( sum, res );
+    sum = b + a;
+    ASSERT_EQ( sum, res );
 }
 
 TEST_F(MathTest, Shift)
