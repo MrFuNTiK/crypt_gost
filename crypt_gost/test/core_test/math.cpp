@@ -8,46 +8,38 @@
 
 using namespace crypt_gost::core::math;
 
-using test_param_t = std::tuple<LongNumber<128>, LongNumber<128>, LongNumber<128>>;
-class MathTest : public ::testing::TestWithParam<test_param_t>
+using test_param_t = std::tuple< LongNumber< 128 >, LongNumber< 128 >, LongNumber< 128 > >;
+class MathTest : public ::testing::TestWithParam< test_param_t >
 {
 };
 
-
-TEST_F(MathTest, Serialization)
+TEST_F( MathTest, Serialization )
 {
-    const uint8_t bytes1[]{ 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01 };
-    const uint8_t bytes2[]{ 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02 };
+    const uint8_t bytes1[]{ 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+                            0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01 };
+    const uint8_t bytes2[]{ 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02,
+                            0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02 };
 
-    crypt_gost::core::math::LongNumber<128> number1(bytes1);
-    crypt_gost::core::math::LongNumber<128> number2(bytes2);
+    crypt_gost::core::math::LongNumber< 128 > number1( bytes1 );
+    crypt_gost::core::math::LongNumber< 128 > number2( bytes2 );
     auto number3 = number1 + number2;
 
     std::stringstream ss;
     ss << number1;
-    ASSERT_STREQ(
-        ss.str().c_str(),
-        "01:01:01:01:01:01:01:01:01:01:01:01:01:01:01:01"
-    );
-    ss.str("");
+    ASSERT_STREQ( ss.str().c_str(), "01:01:01:01:01:01:01:01:01:01:01:01:01:01:01:01" );
+    ss.str( "" );
     ss << number2;
-    ASSERT_STREQ(
-        ss.str().c_str(),
-        "02:02:02:02:02:02:02:02:02:02:02:02:02:02:02:02"
-    );
-    ss.str("");
+    ASSERT_STREQ( ss.str().c_str(), "02:02:02:02:02:02:02:02:02:02:02:02:02:02:02:02" );
+    ss.str( "" );
     ss << number3;
-    ASSERT_STREQ(
-        ss.str().c_str(),
-        "03:03:03:03:03:03:03:03:03:03:03:03:03:03:03:03"
-    );
+    ASSERT_STREQ( ss.str().c_str(), "03:03:03:03:03:03:03:03:03:03:03:03:03:03:03:03" );
 }
 
-TEST_P(MathTest, Addition)
+TEST_P( MathTest, Addition )
 {
-    auto a = std::get<0>(GetParam());
-    auto b = std::get<1>(GetParam());
-    auto res = std::get<2>(GetParam());
+    auto a = std::get< 0 >( GetParam() );
+    auto b = std::get< 1 >( GetParam() );
+    auto res = std::get< 2 >( GetParam() );
 
     auto sum = a + b;
     ASSERT_EQ( sum, res );
@@ -55,15 +47,16 @@ TEST_P(MathTest, Addition)
     ASSERT_EQ( sum, res );
 }
 
-TEST_F(MathTest, Shift)
+TEST_F( MathTest, Shift )
 {
+    // clang-format off
     LongNumber<128> a((const uint8_t[]){ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11, 0x11 }); 
     LongNumber<128> b((const uint8_t[]){ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11, 0x11, 0x00 }); 
     LongNumber<128> c((const uint8_t[]){ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11, 0x11, 0x00, 0x00 });
     LongNumber<128> d((const uint8_t[]){ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11, 0x11, 0x00, 0x00, 0x00 });
     LongNumber<128> e((const uint8_t[]){ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11, 0x11, 0x00, 0x00, 0x00, 0x00 });
     LongNumber<128> f((const uint8_t[]){ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11, 0x11, 0x00, 0x00, 0x00, 0x00, 0x00 });
-
+    // clang-format on
 
     a <<= 8;
     EXPECT_EQ( a, b );
@@ -77,6 +70,7 @@ TEST_F(MathTest, Shift)
     EXPECT_EQ( a, f );
 }
 
+// clang-format off
 INSTANTIATE_TEST_CASE_P(
     CoreTest, MathTest, ::testing::Values(
             test_param_t
@@ -99,3 +93,4 @@ INSTANTIATE_TEST_CASE_P(
             )
         )
     );
+// clang-format on

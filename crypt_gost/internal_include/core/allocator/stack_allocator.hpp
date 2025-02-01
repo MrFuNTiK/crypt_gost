@@ -4,24 +4,27 @@
 #include <core/allocator/i_allocator.hpp>
 #include <core/allocator/heap_manager/heap_manager.h>
 
-namespace crypt_gost {
+namespace crypt_gost
+{
 
-namespace core {
+namespace core
+{
 
-namespace allocator {
+namespace allocator
+{
 
-constexpr size_t STACK_SIZE = 32 * 1024 * 1024; //32kb
+constexpr size_t STACK_SIZE = 32 * 1024 * 1024; // 32kb
 
 class StackAllocator : public crypt_gost::core::allocator::I_Allocator
 {
 public:
     ~StackAllocator();
-    StackAllocator(const StackAllocator&) = delete;
-    StackAllocator operator =(const StackAllocator&) = delete;
+    StackAllocator( const StackAllocator& ) = delete;
+    StackAllocator operator=( const StackAllocator& ) = delete;
 
     /**
      * @brief Get thread-safe instance of allocator.
-     * 
+     *
      * @return Instance of allocator.
      */
     static StackAllocator& GetInstance();

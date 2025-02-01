@@ -8,7 +8,7 @@
 
 #include <assert.h>
 
-#define CHUNKS_COLLECT_FACTOR   1
+#define CHUNKS_COLLECT_FACTOR 1
 
 static inline void _HeapManager_AppendInUseChunk( HeapManager* manager, HeapChunk* chunk );
 static inline void _HeapManager_AppendAvaliableChunk( HeapManager* manager, HeapChunk* chunk );
@@ -118,7 +118,8 @@ inline void _HeapManager_CollectFragmentedChunks( HeapManager* manager )
         {
             HeapChunk* rightMergedChunk = cur->next;
             _HeapManager_ReleaseAvaliableChunk( manager, rightMergedChunk );
-            cur->region.size = PTR_DIFF( cur->region.ptr, HeapChunk_GetFirstAfterChunk( rightMergedChunk ) );
+            cur->region.size =
+                PTR_DIFF( cur->region.ptr, HeapChunk_GetFirstAfterChunk( rightMergedChunk ) );
         }
         else
         {
@@ -143,7 +144,7 @@ void _SortChunks( HeapChunks* chunks )
         swaped = 0;
         while( cur->next )
         {
-            if( (size_t)cur > (size_t)cur->next )
+            if( ( size_t )cur > ( size_t )cur->next )
             {
                 HeapChunk* newCur = cur->next;
                 swaped = 1;
@@ -157,8 +158,7 @@ void _SortChunks( HeapChunks* chunks )
             }
         }
         cur = chunks->head;
-    }
-    while( swaped );
+    } while( swaped );
 }
 
 static inline void _HeapManager_SortAvaliableChunks( HeapManager* manager )
@@ -177,9 +177,8 @@ HeapManager* HeapManager_Initialize( void* ptr, size_t heapSize, OnMemoryRelease
     manager->heap = ptr + sizeof( HeapManager );
     manager->heapSize = heapSize - sizeof( HeapManager );
 
-    HeapChunk* initFreeChunk = HeapChunk_CreateAt( manager->heap,
-                                                   manager->heapSize - sizeof( HeapChunk ),
-                                                   0 );
+    HeapChunk* initFreeChunk =
+        HeapChunk_CreateAt( manager->heap, manager->heapSize - sizeof( HeapChunk ), 0 );
     initFreeChunk->prev = NULL;
     initFreeChunk->next = NULL;
 
@@ -222,9 +221,7 @@ void* HeapManager_Allocate( HeapManager* manager, size_t size, size_t alignment 
     }
 
     _HeapManager_AppendInUseChunk( manager, newAllocated );
-    assert( alignment ?
-            (size_t)(newAllocated->region.ptr) % alignment == 0 :
-            1 );
+    assert( alignment ? ( size_t )( newAllocated->region.ptr ) % alignment == 0 : 1 );
     return newAllocated->region.ptr;
 }
 
@@ -237,8 +234,8 @@ void HeapManager_Deallocate( HeapManager* manager, void* ptr )
         return;
     }
 
-    if( (size_t)ptr < (size_t)manager->heap ||
-        (size_t)ptr > (size_t)manager->heap + manager->heapSize )
+    if( ( size_t )ptr < ( size_t )manager->heap
+        || ( size_t )ptr > ( size_t )manager->heap + manager->heapSize )
     {
         // TODO: SEG_FAULT?
         // printf( "NOT OF THIS HEAP" );
@@ -251,7 +248,7 @@ void HeapManager_Deallocate( HeapManager* manager, void* ptr )
     /**
      * Search chunk from the end assumin the later resource was
      * allocated, the earlier it is deallocated.
-     * 
+     *
      */
     for( ; chunk; chunk = chunk->prev )
     {
@@ -299,12 +296,14 @@ void HeapManager_DumpChunks( HeapManager* manager )
 
     printf( "Manager location:\n" );
     printf( "\tManager start address:\t\t%p\n", manager );
-    printf( "\tManager heap last address:\t%p\n\n",  (void*)((size_t)manager->heap + manager->heapSize ));
+    printf( "\tManager heap last address:\t%p\n\n",
+            ( void* )( ( size_t )manager->heap + manager->heapSize ) );
 
-    printf( "Avaliable chunks:\n");
-    for( ; chunk ; chunk = chunk->next )
+    printf( "Avaliable chunks:\n" );
+    for( ; chunk; chunk = chunk->next )
     {
-        if( !chunk ) break;
+        if( !chunk )
+            break;
         printf( "Chunk #%d:\n", ctr );
         printf( "Chunk start:\t%p\n", chunk );
         printf( "\tptr:\t%p\n", chunk->region.ptr );
@@ -316,10 +315,11 @@ void HeapManager_DumpChunks( HeapManager* manager )
 
     chunk = manager->inUseChunks.head;
     ctr = 0;
-    printf( "In-use chunks:\n");
-    for( ; chunk ; chunk = chunk->next )
+    printf( "In-use chunks:\n" );
+    for( ; chunk; chunk = chunk->next )
     {
-        if( !chunk ) break;
+        if( !chunk )
+            break;
         printf( "Chunk #%d:\n", ctr );
         printf( "Chunk start:\t%p\n", chunk );
         printf( "\tptr:\t%p\n", chunk->region.ptr );

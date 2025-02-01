@@ -25,12 +25,12 @@ StackAllocator& StackAllocator::GetInstance()
 
 void* StackAllocator::Allocate( size_t size, size_t alignment ) noexcept
 {
-    std::lock_guard guard(mt);
+    std::lock_guard guard( mt );
     return HeapManager_Allocate( manager, size, alignment );
 }
 
 void StackAllocator::Deallocate( void* ptr ) noexcept
 {
-    std::lock_guard guard(mt);
+    std::lock_guard guard( mt );
     HeapManager_Deallocate( manager, ptr );
 }

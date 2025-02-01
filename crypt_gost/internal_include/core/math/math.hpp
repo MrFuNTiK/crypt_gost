@@ -32,7 +32,7 @@ constexpr bool IsPowerOfTwo( const size_t value )
     return ( value & ( value - 1 ) ) == 0;
 }
 
-template <size_t number>
+template < size_t number >
 struct is_power_of_two
 {
     static const bool value = IsPowerOfTwo( number );
@@ -40,23 +40,20 @@ struct is_power_of_two
 
 } // namespace sfinae
 
-template<size_t bitSize,
-         typename T = uint32_t,
-         std::enable_if_t< sfinae::is_power_of_two< bitSize >::value,
-                           bool> = true,
-         std::enable_if_t<std::is_integral<T>::value, bool> = true,
-         std::enable_if_t<std::is_unsigned<T>::value, bool> = true
-        >
+template < size_t bitSize,
+           typename T = uint32_t,
+           std::enable_if_t< sfinae::is_power_of_two< bitSize >::value, bool > = true,
+           std::enable_if_t< std::is_integral< T >::value, bool > = true,
+           std::enable_if_t< std::is_unsigned< T >::value, bool > = true >
 class LongNumber final
 {
 public:
-    explicit LongNumber( const uint8_t* bytes,
-                         I_Allocator& alloc = HeapAllocator::GetInstance() )
-    : bytes_()
-    , buf_(bitSize/8, 8, alloc)
+    explicit LongNumber( const uint8_t* bytes, I_Allocator& alloc = HeapAllocator::GetInstance() )
+        : bytes_()
+        , buf_( bitSize / 8, 8, alloc )
     {
         assert( bytes );
-        bytes_.byte = static_cast<uint8_t*>(buf_.GetBuf());
+        bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
 
         if( bytes )
         {
@@ -64,12 +61,11 @@ public:
         }
     };
 
-    LongNumber( T value = 0,
-                I_Allocator& alloc = HeapAllocator::GetInstance() )
-    : bytes_()
-    , buf_(bitSize/8, 4, alloc)
+    LongNumber( T value = 0, I_Allocator& alloc = HeapAllocator::GetInstance() )
+        : bytes_()
+        , buf_( bitSize / 8, 4, alloc )
     {
-        bytes_.byte = static_cast<uint8_t*>(buf_.GetBuf());
+        bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
         memset( buf_.GetBuf(), 0, bitSize / 8 );
         bytes_.word[ 0 ] = value;
     };
@@ -78,28 +74,28 @@ public:
 
     LongNumber( const LongNumber& other )
         : bytes_()
-        , buf_(other.buf_)
+        , buf_( other.buf_ )
     {
-        bytes_.byte = static_cast<uint8_t*>(buf_.GetBuf());
+        bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
     }
 
     LongNumber& operator=( const LongNumber& other )
     {
         buf_ = other.buf_;
-        bytes_.byte = static_cast<uint8_t*>(buf_.GetBuf());
+        bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
         return *this;
     }
 
     LongNumber( LongNumber&& other )
-        : buf_(std::move(other.buf_))
+        : buf_( std::move( other.buf_ ) )
     {
-        bytes_.byte = static_cast<uint8_t*>(buf_.GetBuf());
+        bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
     }
 
     LongNumber& operator=( LongNumber&& other )
     {
-        buf_ = std::move(other.buf_);
-        bytes_.byte = static_cast<uint8_t*>(buf_.GetBuf());
+        buf_ = std::move( other.buf_ );
+        bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
         return *this;
     }
 
@@ -112,20 +108,21 @@ public:
     {
         bool carry = false;
         const bool isLittleEndian = traits::IsLittleEndian();
-        for( size_t i = traits_.COUNT_OF_WORDS - 1; i != std::numeric_limits<size_t>::max(); --i )
+        for( size_t i = traits_.COUNT_OF_WORDS - 1; i != std::numeric_limits< size_t >::max(); --i )
         {
-            T a = isLittleEndian ? traits::ChangeEndiannes( bytes_.word[i] ) : bytes_.word[i];
-            T b = isLittleEndian ? traits::ChangeEndiannes( other.bytes_.word[i] ) : other.bytes_.word[i];
+            T a = isLittleEndian ? traits::ChangeEndiannes( bytes_.word[ i ] ) : bytes_.word[ i ];
+            T b = isLittleEndian ? traits::ChangeEndiannes( other.bytes_.word[ i ] )
+                                 : other.bytes_.word[ i ];
             T res = a + b + carry;
-            carry = res < std::min(a, b) + carry;
-            bytes_.word[i] = isLittleEndian ? traits::ChangeEndiannes( res ) : res;
+            carry = res < std::min( a, b ) + carry;
+            bytes_.word[ i ] = isLittleEndian ? traits::ChangeEndiannes( res ) : res;
         }
         return *this;
     }
 
     LongNumber operator+( const LongNumber& other ) const
     {
-        LongNumber ret(*this);
+        LongNumber ret( *this );
         ret += other;
         return ret;
     }
@@ -134,14 +131,14 @@ public:
     {
         for( size_t i = 0; i < traits_.COUNT_OF_WORDS; ++i )
         {
-            bytes_.word[i] ^= other.bytes_.word[i];
+            bytes_.word[ i ] ^= other.bytes_.word[ i ];
         }
         return *this;
     }
 
     LongNumber operator^( const LongNumber& other ) const
     {
-        LongNumber ret(*this);
+        LongNumber ret( *this );
         ret ^= other;
         return ret;
     }
@@ -150,18 +147,19 @@ public:
     {
         if( shift > bitSize )
         {
-            memset(bytes_.byte, 0, bitSize/8);
+            memset( bytes_.byte, 0, bitSize / 8 );
             return *this;
         }
 
-        size_t wordsShift      = shift / traits::BitsNumberOf(bytes_.word[0]);
-        size_t perWordBitShift = shift % traits::BitsNumberOf(bytes_.word[0]);
+        size_t wordsShift = shift / traits::BitsNumberOf( bytes_.word[ 0 ] );
+        size_t perWordBitShift = shift % traits::BitsNumberOf( bytes_.word[ 0 ] );
 
-        // memcpy for overlapping buffers is undefined behabiour, so copy in cycle.
+        // memcpy for overlapping buffers is undefined behabiour, so copy in
+        // cycle.
         size_t readPos = wordsShift;
         size_t writePos = 0;
 
-        for( size_t i = 0; i < traits_.COUNT_OF_WORDS - wordsShift; ++i)
+        for( size_t i = 0; i < traits_.COUNT_OF_WORDS - wordsShift; ++i )
         {
             assert( readPos < traits_.COUNT_OF_WORDS );
             assert( writePos < traits_.COUNT_OF_WORDS );
@@ -180,13 +178,12 @@ public:
         {
             size_t wordIdx = traits_.COUNT_OF_WORDS - i - 1;
             assert( wordIdx < traits_.COUNT_OF_WORDS );
-            T word = isLittleEndian ? traits::ChangeEndiannes(bytes_.word[ wordIdx ])
-                                           : bytes_.word[ wordIdx ];
+            T word = isLittleEndian ? traits::ChangeEndiannes( bytes_.word[ wordIdx ] )
+                                    : bytes_.word[ wordIdx ];
             T buf = word >> ( traits_.WORD_BIT_SIZE - perWordBitShift );
             T res = word << perWordBitShift;
             res |= appendToRight;
-            bytes_.word[wordIdx] = isLittleEndian ? traits::ChangeEndiannes(res)
-                                                  : res;
+            bytes_.word[ wordIdx ] = isLittleEndian ? traits::ChangeEndiannes( res ) : res;
             appendToRight = buf;
         }
         return *this;
@@ -195,11 +192,12 @@ public:
     LongNumber operator*=( const LongNumber& other )
     {
         LongNumber ret;
-        LongNumber tmp(other);
+        LongNumber tmp( other );
 
-        for( size_t i = traits_.NUMBER_BIT_SIZE - 1; i != std::numeric_limits<size_t>::max(); --i )
+        for( size_t i = traits_.NUMBER_BIT_SIZE - 1; i != std::numeric_limits< size_t >::max();
+             --i )
         {
-            if( CheckBit(i) )
+            if( CheckBit( i ) )
             {
                 tmp <<= 1;
                 ret += tmp;
@@ -212,13 +210,11 @@ public:
     {
         for( size_t i = 0; i < number.traits_.COUNT_OF_BYTES - 1; ++i )
         {
-            os << std::setfill('0') << std::setw( 2 )
-               << std::hex << static_cast<int>(number.bytes_.byte[i])
-               << ":";
+            os << std::setfill( '0' ) << std::setw( 2 ) << std::hex
+               << static_cast< int >( number.bytes_.byte[ i ] ) << ":";
         }
-        os << std::setfill('0') << std::setw( 2 )
-           << std::hex << static_cast<int>(number.bytes_.byte[number.BitSize()/8-1])
-           << std::flush;
+        os << std::setfill( '0' ) << std::setw( 2 ) << std::hex
+           << static_cast< int >( number.bytes_.byte[ number.BitSize() / 8 - 1 ] ) << std::flush;
         return os;
     }
 
@@ -243,7 +239,8 @@ private:
 private:
     union Bytes
     {
-        Bytes() : byte( nullptr ){};
+        Bytes()
+            : byte( nullptr ){};
         uint8_t* byte;
         T* word;
     };
@@ -257,14 +254,13 @@ private:
     };
 
     static constexpr Traits traits_{ bitSize,
-                                     bitSize/8,
-                                     bitSize/traits::BitsNumberOf<T>(),
-                                     traits::BitsNumberOf<T>()};
+                                     bitSize / 8,
+                                     bitSize / traits::BitsNumberOf< T >(),
+                                     traits::BitsNumberOf< T >() };
     Bytes bytes_;
 
     util::MemBuf buf_;
 };
-
 
 } // namespace math
 

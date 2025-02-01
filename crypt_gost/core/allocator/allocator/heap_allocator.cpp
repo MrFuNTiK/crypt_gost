@@ -11,7 +11,7 @@ HeapAllocator& HeapAllocator::GetInstance()
 
 void* HeapAllocator::Allocate( size_t size, size_t alignment ) noexcept
 {
-    return alignment ? aligned_alloc(alignment, size) : malloc(size);
+    return alignment ? aligned_alloc( alignment, size ) : malloc( size );
 }
 
 void HeapAllocator::Deallocate( void* ptr ) noexcept

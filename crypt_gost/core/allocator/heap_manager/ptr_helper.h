@@ -2,6 +2,8 @@
 
 #include <stdlib.h>
 
+// clang-format off
+
 static inline size_t DIFF_UPTO_ALIGNMENT( void* ptr, size_t algn )
 {
     return algn ?
@@ -19,3 +21,5 @@ static inline size_t PTR_DIFF( void* left, void* right )
 #define SHIFT_PTR_RIGHT( ptr, num )             ( ( unsigned char* )( ptr ) + ( num ) )
 #define SHIFT_PTR_LEFT( ptr, num )              ( ( unsigned char* )( ptr ) - ( num ) )
 #define SHIFT_PTR_UPTO_ALIGNMENT( ptr, algn )   ( ( void* )( size_t )( ptr ) + DIFF_UPTO_ALIGNMENT( ptr, algn ) )
+
+// clang-format on

@@ -2,8 +2,8 @@
 
 #include <stdlib.h>
 
-typedef void*(*AllocateMemory_fn)(size_t size, size_t alignment);
-typedef void(*DeallocateMemory_fn)(void* ptr);
+typedef void* ( *AllocateMemory_fn )( size_t size, size_t alignment );
+typedef void ( *DeallocateMemory_fn )( void* ptr );
 
 struct core_allocator_st
 {
