@@ -41,7 +41,7 @@ Cpp11BracedListStyle: false
 FixNamespaceComments: true
 IncludeIsMainRegex: '$'
 IndentCaseLabels: false
-IndentPPDirectives: None
+IndentPPDirectives: AfterHash
 IndentWidth: '4'
 IndentWrappedFunctionNames: false
 Language: Cpp
@@ -49,6 +49,8 @@ MacroBlockBegin: "^BEGIN_*"
 MacroBlockEnd: "^END_*"
 MaxEmptyLinesToKeep: '1'
 PointerAlignment: Left
+# TODO: Upgrade clang-format
+# PPIndentWidth: '1'
 ReflowComments: true
 SortIncludes: false
 SpaceAfterCStyleCast: false

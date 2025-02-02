@@ -106,18 +106,42 @@ public:
 
     LongNumber& operator+=( const LongNumber& other ) noexcept
     {
+#ifdef CRYPT_GOST_HAS_BYTE_ORDERING
+#    ifdef CRYPT_GOST_LITTLE_ENDIAN
+        bool carry = false;
+        for( size_t i = traits_.COUNT_OF_WORDS - 1; i != std::numeric_limits< size_t >::max(); --i )
+        {
+            T a = traits::ChangeByteOrdering( bytes_.word[ i ] );
+            T b = traits::ChangeByteOrdering( other.bytes_.word[ i ] );
+            T res = a + b + carry;
+            carry = res < std::min( a, b ) + carry;
+            bytes_.word[ i ] = traits::ChangeByteOrdering( res );
+        }
+        return *this;
+#    else // CRYPT_GOST_BIG_ENDIAN
+        bool carry = false;
+        for( size_t i = traits_.COUNT_OF_WORDS - 1; i != std::numeric_limits< size_t >::max(); --i )
+        {
+            T res = bytes_.word[ i ] + other.bytes_.word[ i ] + carry;
+            carry = res < std::min( a, b ) + carry;
+            bytes_.word[ i ] = res;
+        }
+        return *this;
+#    endif
+#else // !CRYPT_GOST_HAS_ENDIAN (somehow no byte ordering info)
         bool carry = false;
         const bool isLittleEndian = traits::IsLittleEndian();
         for( size_t i = traits_.COUNT_OF_WORDS - 1; i != std::numeric_limits< size_t >::max(); --i )
         {
-            T a = isLittleEndian ? traits::ChangeEndiannes( bytes_.word[ i ] ) : bytes_.word[ i ];
-            T b = isLittleEndian ? traits::ChangeEndiannes( other.bytes_.word[ i ] )
+            T a = isLittleEndian ? traits::ChangeByteOrdering( bytes_.word[ i ] ) : bytes_.word[ i ];
+            T b = isLittleEndian ? traits::ChangeByteOrdering( other.bytes_.word[ i ] )
                                  : other.bytes_.word[ i ];
             T res = a + b + carry;
             carry = res < std::min( a, b ) + carry;
-            bytes_.word[ i ] = isLittleEndian ? traits::ChangeEndiannes( res ) : res;
+            bytes_.word[ i ] = isLittleEndian ? traits::ChangeByteOrdering( res ) : res;
         }
         return *this;
+#endif // CRYPT_GOST_HAS_ENDIAN
     }
 
     LongNumber operator+( const LongNumber& other ) const
@@ -178,12 +202,12 @@ public:
         {
             size_t wordIdx = traits_.COUNT_OF_WORDS - i - 1;
             assert( wordIdx < traits_.COUNT_OF_WORDS );
-            T word = isLittleEndian ? traits::ChangeEndiannes( bytes_.word[ wordIdx ] )
+            T word = isLittleEndian ? traits::ChangeByteOrdering( bytes_.word[ wordIdx ] )
                                     : bytes_.word[ wordIdx ];
             T buf = word >> ( traits_.WORD_BIT_SIZE - perWordBitShift );
             T res = word << perWordBitShift;
             res |= appendToRight;
-            bytes_.word[ wordIdx ] = isLittleEndian ? traits::ChangeEndiannes( res ) : res;
+            bytes_.word[ wordIdx ] = isLittleEndian ? traits::ChangeByteOrdering( res ) : res;
             appendToRight = buf;
         }
         return *this;
