@@ -25,7 +25,7 @@ constexpr size_t BitsNumberOf( T value )
     return sizeof( value ) * 8;
 }
 
-bool IsLittleEndian()
+static inline bool IsLittleEndian()
 {
     int32_t a = 1;
     return *( int8_t* )( &a ) == 1;

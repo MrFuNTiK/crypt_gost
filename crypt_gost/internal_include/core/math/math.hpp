@@ -24,6 +24,17 @@ using namespace crypt_gost::core::allocator;
 using namespace crypt_gost::core::util;
 using namespace crypt_gost::core;
 
+#ifdef CRYPT_GOST_HAS_BYTE_ORDERING
+#    ifdef CRYPT_GOST_LITTLE_ENDIAN
+#        define BYTE_SWAP( x ) traits::ChangeByteOrdering( ( x ) )
+#    elif defined( CRYPT_GOST_BIG_ENDIAN )
+#        define BYTE_SWAP( x ) ( x )
+#    endif
+#else
+static const bool IS_LITTLE_ENDIAN = traits::IsLittleEndian();
+#    define BYTE_SWAP( x ) ( IS_LITTLE_ENDIAN ? traits::ChangeByteOrdering( ( x ) ) : ( x ) )
+#endif
+
 namespace sfinae
 {
 
@@ -58,6 +69,7 @@ public:
         if( bytes )
         {
             std::memcpy( bytes_.byte, bytes, bitSize / 8 );
+            ByteSwap();
         }
     };
 
@@ -67,7 +79,7 @@ public:
     {
         bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
         memset( buf_.GetBuf(), 0, bitSize / 8 );
-        bytes_.word[ 0 ] = value;
+        bytes_.word[ 0 ] = BYTE_SWAP( value );
     };
 
     ~LongNumber() = default;
@@ -106,42 +118,22 @@ public:
 
     LongNumber& operator+=( const LongNumber& other ) noexcept
     {
-#ifdef CRYPT_GOST_HAS_BYTE_ORDERING
-#    ifdef CRYPT_GOST_LITTLE_ENDIAN
         bool carry = false;
         for( size_t i = traits_.COUNT_OF_WORDS - 1; i != std::numeric_limits< size_t >::max(); --i )
         {
-            T a = traits::ChangeByteOrdering( bytes_.word[ i ] );
-            T b = traits::ChangeByteOrdering( other.bytes_.word[ i ] );
-            T res = a + b + carry;
-            carry = res < std::min( a, b ) + carry;
-            bytes_.word[ i ] = traits::ChangeByteOrdering( res );
-        }
-        return *this;
-#    else // CRYPT_GOST_BIG_ENDIAN
-        bool carry = false;
-        for( size_t i = traits_.COUNT_OF_WORDS - 1; i != std::numeric_limits< size_t >::max(); --i )
-        {
-            T res = bytes_.word[ i ] + other.bytes_.word[ i ] + carry;
-            carry = res < std::min( a, b ) + carry;
+            T a = bytes_.word[ i ];
+            T b = other.bytes_.word[ i ];
+            T res = a + b;
+            bool carryNext = res < a;
+            res += carry;
+            if( res == 0 )
+            {
+                carryNext = true;
+            }
             bytes_.word[ i ] = res;
+            carry = carryNext;
         }
         return *this;
-#    endif
-#else // !CRYPT_GOST_HAS_ENDIAN (somehow no byte ordering info)
-        bool carry = false;
-        const bool isLittleEndian = traits::IsLittleEndian();
-        for( size_t i = traits_.COUNT_OF_WORDS - 1; i != std::numeric_limits< size_t >::max(); --i )
-        {
-            T a = isLittleEndian ? traits::ChangeByteOrdering( bytes_.word[ i ] ) : bytes_.word[ i ];
-            T b = isLittleEndian ? traits::ChangeByteOrdering( other.bytes_.word[ i ] )
-                                 : other.bytes_.word[ i ];
-            T res = a + b + carry;
-            carry = res < std::min( a, b ) + carry;
-            bytes_.word[ i ] = isLittleEndian ? traits::ChangeByteOrdering( res ) : res;
-        }
-        return *this;
-#endif // CRYPT_GOST_HAS_ENDIAN
     }
 
     LongNumber operator+( const LongNumber& other ) const
@@ -197,17 +189,15 @@ public:
         }
 
         size_t appendToRight = 0;
-        const bool isLittleEndian = traits::IsLittleEndian();
         for( size_t i = wordsShift; i < traits_.COUNT_OF_WORDS; ++i )
         {
             size_t wordIdx = traits_.COUNT_OF_WORDS - i - 1;
             assert( wordIdx < traits_.COUNT_OF_WORDS );
-            T word = isLittleEndian ? traits::ChangeByteOrdering( bytes_.word[ wordIdx ] )
-                                    : bytes_.word[ wordIdx ];
+            T word = bytes_.word[ wordIdx ];
             T buf = word >> ( traits_.WORD_BIT_SIZE - perWordBitShift );
             T res = word << perWordBitShift;
             res |= appendToRight;
-            bytes_.word[ wordIdx ] = isLittleEndian ? traits::ChangeByteOrdering( res ) : res;
+            bytes_.word[ wordIdx ] = res;
             appendToRight = buf;
         }
         return *this;
@@ -230,8 +220,16 @@ public:
         return ret;
     }
 
+    LongNumber operator*( const LongNumber& other )
+    {
+        auto ret = *this;
+        ret *= other;
+        return ret;
+    }
+
     friend std::ostream& operator<<( std::ostream& os, const LongNumber& number )
     {
+        number.ByteSwap();
         for( size_t i = 0; i < number.traits_.COUNT_OF_BYTES - 1; ++i )
         {
             os << std::setfill( '0' ) << std::setw( 2 ) << std::hex
@@ -239,6 +237,7 @@ public:
         }
         os << std::setfill( '0' ) << std::setw( 2 ) << std::hex
            << static_cast< int >( number.bytes_.byte[ number.BitSize() / 8 - 1 ] ) << std::flush;
+        number.ByteSwap();
         return os;
     }
 
@@ -277,12 +276,20 @@ private:
         size_t WORD_BIT_SIZE;
     };
 
+    void ByteSwap() const
+    {
+        for( size_t i = 0; i < traits_.COUNT_OF_WORDS; ++i )
+        {
+            bytes_.word[ i ] = BYTE_SWAP( bytes_.word[ i ] );
+        }
+    }
+
     static constexpr Traits traits_{ bitSize,
                                      bitSize / 8,
                                      bitSize / traits::BitsNumberOf< T >(),
                                      traits::BitsNumberOf< T >() };
-    Bytes bytes_;
 
+    Bytes bytes_;
     util::MemBuf buf_;
 };
 
