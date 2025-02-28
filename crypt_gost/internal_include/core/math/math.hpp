@@ -3,6 +3,7 @@
 #include <cassert>
 #include <vector>
 #include <iostream>
+#include <functional>
 #include <iomanip>
 #include <cstdint>
 #include <cstring>
@@ -52,7 +53,7 @@ struct is_power_of_two
 } // namespace sfinae
 
 template < size_t bitSize,
-           typename T = uint32_t,
+           typename T = uint64_t,
            std::enable_if_t< sfinae::is_power_of_two< bitSize >::value, bool > = true,
            std::enable_if_t< std::is_integral< T >::value, bool > = true,
            std::enable_if_t< std::is_unsigned< T >::value, bool > = true >
@@ -62,6 +63,7 @@ public:
     explicit LongNumber( const uint8_t* bytes, I_Allocator& alloc = HeapAllocator::GetInstance() )
         : bytes_()
         , buf_( bitSize / 8, 8, alloc )
+        , isZero_( true )
     {
         assert( bytes );
         bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
@@ -69,17 +71,21 @@ public:
         if( bytes )
         {
             std::memcpy( bytes_.byte, bytes, bitSize / 8 );
-            ByteSwap();
+            if( !CheckIsZero() )
+            {
+                ByteSwap();
+            }
         }
     };
 
     LongNumber( T value = 0, I_Allocator& alloc = HeapAllocator::GetInstance() )
         : bytes_()
         , buf_( bitSize / 8, 4, alloc )
+        , isZero_( value == 0 )
     {
         bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
         memset( buf_.GetBuf(), 0, bitSize / 8 );
-        bytes_.word[ 0 ] = BYTE_SWAP( value );
+        bytes_.word[ traits_.COUNT_OF_WORDS - 1 ] = value;
     };
 
     ~LongNumber() = default;
@@ -87,6 +93,7 @@ public:
     LongNumber( const LongNumber& other )
         : bytes_()
         , buf_( other.buf_ )
+        , isZero_( other.isZero_ )
     {
         bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
     }
@@ -95,11 +102,13 @@ public:
     {
         buf_ = other.buf_;
         bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
+        isZero_ = other.isZero_;
         return *this;
     }
 
     LongNumber( LongNumber&& other )
         : buf_( std::move( other.buf_ ) )
+        , isZero_( other.isZero_ )
     {
         bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
     }
@@ -108,6 +117,7 @@ public:
     {
         buf_ = std::move( other.buf_ );
         bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
+        isZero_ = other.isZero_;
         return *this;
     }
 
@@ -118,6 +128,11 @@ public:
 
     LongNumber& operator+=( const LongNumber& other ) noexcept
     {
+        if( other.isZero_ )
+        {
+            return *this;
+        }
+
         bool carry = false;
         for( size_t i = traits_.COUNT_OF_WORDS - 1; i != std::numeric_limits< size_t >::max(); --i )
         {
@@ -126,13 +141,14 @@ public:
             T res = a + b;
             bool carryNext = res < a;
             res += carry;
-            if( res == 0 )
+            if( res == 0 && carry )
             {
                 carryNext = true;
             }
             bytes_.word[ i ] = res;
             carry = carryNext;
         }
+        CheckIsZero();
         return *this;
     }
 
@@ -161,6 +177,16 @@ public:
 
     LongNumber operator<<=( size_t shift )
     {
+        if( isZero_ )
+        {
+            return *this;
+        }
+
+        if( shift == 0 )
+        {
+            return *this;
+        }
+
         if( shift > bitSize )
         {
             memset( bytes_.byte, 0, bitSize / 8 );
@@ -200,30 +226,59 @@ public:
             bytes_.word[ wordIdx ] = res;
             appendToRight = buf;
         }
+        CheckIsZero();
         return *this;
     }
 
     LongNumber operator*=( const LongNumber& other )
     {
-        LongNumber ret;
-        LongNumber tmp( other );
-
-        for( size_t i = traits_.NUMBER_BIT_SIZE - 1; i != std::numeric_limits< size_t >::max();
-             --i )
+        if( isZero_ || other.isZero_ )
         {
-            if( CheckBit( i ) )
+            memset( buf_.GetBuf(), 0, traits_.COUNT_OF_BYTES );
+            return *this;
+        }
+
+        size_t lastCheckedBit = 0;
+        LongNumber tmp( *this );
+        memset( buf_.GetBuf(), 0, traits_.COUNT_OF_BYTES );
+        for( size_t i = 0; i < traits_.NUMBER_BIT_SIZE; ++i )
+        {
+            if( other.CheckBit( i ) )
             {
-                tmp <<= 1;
-                ret += tmp;
+                size_t shift = i - lastCheckedBit;
+                tmp <<= ( shift );
+                *this += tmp;
+                lastCheckedBit = i;
             }
         }
-        return ret;
+        return *this;
     }
 
-    LongNumber operator*( const LongNumber& other )
+    LongNumber operator*( const LongNumber& other ) const
     {
-        auto ret = *this;
-        ret *= other;
+        LongNumber ret;
+        size_t firstBitsCount = 0;
+        size_t secondBitsCount = 0;
+        std::reference_wrapper< const LongNumber > left = *this;
+        std::reference_wrapper< const LongNumber > right = other;
+
+        if( isZero_ || other.isZero_ )
+        {
+            return ret;
+        }
+
+        for( size_t i = 0; i < traits_.NUMBER_BIT_SIZE; ++i )
+        {
+            firstBitsCount += CheckBit( i );
+            secondBitsCount += other.CheckBit( i );
+        }
+        if( firstBitsCount > secondBitsCount )
+        {
+            std::swap( left, right );
+        }
+
+        ret = left;
+        ret *= right;
         return ret;
     }
 
@@ -255,8 +310,32 @@ private:
             ss << "checked bit: " << bit << ", number bit size: " << bitSize;
             throw std::out_of_range( ss.str().c_str() );
         }
+        size_t wordIdx = traits_.COUNT_OF_WORDS - 1 - bit / traits_.WORD_BIT_SIZE;
+        size_t bitIdx = bit % traits_.WORD_BIT_SIZE;
+        T word = bytes_.word[ wordIdx ];
+        return ( ( T )1 << ( bitIdx ) ) & word;
+    }
 
-        return ( 1 << ( bit % 8 ) ) & bytes_.byte[ bit / 8 ];
+    bool CheckIsZero()
+    {
+        for( size_t i = 0; i < traits_.COUNT_OF_WORDS; ++i )
+        {
+            if( bytes_.word[ i ] != 0 )
+            {
+                isZero_ = false;
+                return isZero_;
+            }
+        }
+        isZero_ = true;
+        return isZero_;
+    }
+
+    void ByteSwap() const
+    {
+        for( size_t i = 0; i < traits_.COUNT_OF_WORDS; ++i )
+        {
+            bytes_.word[ i ] = BYTE_SWAP( bytes_.word[ i ] );
+        }
     }
 
 private:
@@ -276,14 +355,6 @@ private:
         size_t WORD_BIT_SIZE;
     };
 
-    void ByteSwap() const
-    {
-        for( size_t i = 0; i < traits_.COUNT_OF_WORDS; ++i )
-        {
-            bytes_.word[ i ] = BYTE_SWAP( bytes_.word[ i ] );
-        }
-    }
-
     static constexpr Traits traits_{ bitSize,
                                      bitSize / 8,
                                      bitSize / traits::BitsNumberOf< T >(),
@@ -291,6 +362,7 @@ private:
 
     Bytes bytes_;
     util::MemBuf buf_;
+    bool isZero_;
 };
 
 } // namespace math
