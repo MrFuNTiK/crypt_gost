@@ -60,17 +60,22 @@ template < size_t bitSize,
 class LongNumber final
 {
 public:
-    explicit LongNumber( const uint8_t* bytes, I_Allocator& alloc = HeapAllocator::GetInstance() )
+    explicit LongNumber( const std::initializer_list< uint8_t > bytes,
+                         I_Allocator& alloc = HeapAllocator::GetInstance() )
         : bytes_()
         , buf_( bitSize / 8, 8, alloc )
         , isZero_( true )
     {
-        assert( bytes );
         bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
 
-        if( bytes )
+        if( bytes.size() != bitSize / 8 )
         {
-            std::memcpy( bytes_.byte, bytes, bitSize / 8 );
+            throw std::runtime_error( "Invalid byte sequence size" );
+        }
+
+        if( bytes.size() > 0 )
+        {
+            std::memcpy( bytes_.byte, bytes.begin(), bitSize / 8 );
             if( !CheckIsZero() )
             {
                 ByteSwap();
