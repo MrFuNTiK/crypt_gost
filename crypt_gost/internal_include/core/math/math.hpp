@@ -73,13 +73,10 @@ public:
             throw std::runtime_error( "Invalid byte sequence size" );
         }
 
-        if( bytes.size() > 0 )
+        std::memcpy( bytes_.byte, bytes.begin(), bitSize / 8 );
+        if( !CheckIsZero() )
         {
-            std::memcpy( bytes_.byte, bytes.begin(), bitSize / 8 );
-            if( !CheckIsZero() )
-            {
-                ByteSwap();
-            }
+            ByteSwap();
         }
     };
 
