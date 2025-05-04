@@ -14,25 +14,25 @@ namespace traits
 {
 
 template < typename T, std::enable_if_t< std::is_integral< T >::value, bool > = true >
-constexpr size_t BitsNumberOf()
+constexpr size_t BitsNumberOf() noexcept
 {
     return sizeof( T ) * 8;
 }
 
 template < typename T, std::enable_if_t< std::is_integral< T >::value, bool > = true >
-constexpr size_t BitsNumberOf( T value )
+constexpr size_t BitsNumberOf( T value ) noexcept
 {
     return sizeof( value ) * 8;
 }
 
-static inline bool IsLittleEndian()
+static inline bool IsLittleEndian() noexcept
 {
     int32_t a = 1;
     return *( int8_t* )( &a ) == 1;
 }
 
 template < typename T, std::enable_if_t< std::is_integral< T >::value, bool > = true >
-T ChangeByteOrdering( T number )
+T ChangeByteOrdering( T number ) noexcept
 {
     T ret = 0;
     for( size_t i = 0; i < sizeof( T ); ++i )

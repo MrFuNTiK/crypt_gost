@@ -68,7 +68,7 @@ public:
     {
         bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
 
-        if( bytes.size() != bitSize / 8 )
+        [[unlikely]] if( bytes.size() != bitSize / 8 )
         {
             throw std::runtime_error( "Invalid byte sequence size" );
         }
@@ -108,14 +108,14 @@ public:
         return *this;
     }
 
-    LongNumber( LongNumber&& other )
+    LongNumber( LongNumber&& other ) noexcept
         : buf_( std::move( other.buf_ ) )
         , isZero_( other.isZero_ )
     {
         bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
     }
 
-    LongNumber& operator=( LongNumber&& other )
+    LongNumber& operator=( LongNumber&& other ) noexcept
     {
         buf_ = std::move( other.buf_ );
         bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
@@ -123,7 +123,7 @@ public:
         return *this;
     }
 
-    bool operator==( const LongNumber& other ) const
+    bool operator==( const LongNumber& other ) const noexcept
     {
         return 0 == std::memcmp( bytes_.byte, other.bytes_.byte, bitSize / 8 );
     }
@@ -177,14 +177,9 @@ public:
         return ret;
     }
 
-    LongNumber operator<<=( size_t shift )
+    LongNumber operator<<=( size_t shift ) noexcept
     {
-        if( isZero_ )
-        {
-            return *this;
-        }
-
-        if( shift == 0 )
+        [[unlikely]] if( isZero_ || shift == 0 )
         {
             return *this;
         }
@@ -232,9 +227,9 @@ public:
         return *this;
     }
 
-    LongNumber operator*=( const LongNumber& other )
+    LongNumber operator*=( const LongNumber& other ) noexcept
     {
-        if( isZero_ || other.isZero_ )
+        [[unlikely]] if( isZero_ || other.isZero_ )
         {
             memset( buf_.GetBuf(), 0, traits_.COUNT_OF_BYTES );
             return *this;
@@ -264,7 +259,7 @@ public:
         std::reference_wrapper< const LongNumber > left = *this;
         std::reference_wrapper< const LongNumber > right = other;
 
-        if( isZero_ || other.isZero_ )
+        [[unlikely]] if( isZero_ || other.isZero_ )
         {
             return ret;
         }
@@ -304,21 +299,17 @@ private:
         return bitSize;
     }
 
-    inline bool CheckBit( size_t bit ) const
+    inline bool CheckBit( size_t bit ) const noexcept
     {
-        if( bit > bitSize )
-        {
-            std::stringstream ss;
-            ss << "checked bit: " << bit << ", number bit size: " << bitSize;
-            throw std::out_of_range( ss.str().c_str() );
-        }
+        assert( bit <= bitSize );
+
         size_t wordIdx = traits_.COUNT_OF_WORDS - 1 - bit / traits_.WORD_BIT_SIZE;
         size_t bitIdx = bit % traits_.WORD_BIT_SIZE;
         T word = bytes_.word[ wordIdx ];
         return ( ( T )1 << ( bitIdx ) ) & word;
     }
 
-    bool CheckIsZero()
+    bool CheckIsZero() noexcept
     {
         for( size_t i = 0; i < traits_.COUNT_OF_WORDS; ++i )
         {
@@ -332,7 +323,7 @@ private:
         return isZero_;
     }
 
-    void ByteSwap() const
+    void ByteSwap() const noexcept
     {
         for( size_t i = 0; i < traits_.COUNT_OF_WORDS; ++i )
         {
