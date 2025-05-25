@@ -9,6 +9,7 @@
 
 #define HEAP_CHUNK_BEGIN_STRING             "HeapChunk begin"
 #define HEAP_CHUNK_END_STRING               "HeapChunk end"
+
 #define ASSERT_ALIGNED_AS( chunk, type )    assert( ( ( size_t )( chunk ) % _Alignof( type ) ) == 0 )
 #define ASSERT_ALIGNED_CHUNK( chunk )       ASSERT_ALIGNED_AS( chunk, HeapChunk )
 #define ASSERT_ALIGNMENT( ptr, algn )       assert( ( size_t( ptr ) % algn ) == 0 )
@@ -62,11 +63,11 @@ void* HeapChunk_GetFirstAfterChunk( HeapChunk* chunk, size_t alignment )
 int HeapChunk_CheckSize( size_t requiredChunkSize,
                          size_t alignment,
                          void* ptr,
-                         size_t avaliableMemory )
+                         size_t availableMemory )
 {
     assert( ptr );
     ASSERT_ALIGNED_CHUNK( ptr );
-    return _HeapChunk_TotalMemoryInUse( ptr, requiredChunkSize, alignment ) <= avaliableMemory;
+    return _HeapChunk_TotalMemoryInUse( ptr, requiredChunkSize, alignment ) <= availableMemory;
 }
 
 static size_t _HeapChunk_TotalMemoryInUse( void* ptr, size_t chunkSize, size_t alignment )
