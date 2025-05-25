@@ -24,7 +24,7 @@ typedef struct
 typedef struct HeapChunk_st
 {
 #ifndef NDEBUG
-    char _beginMarker[ 32 ];        ///< Debugging buffer showing chunk start in memory dump.
+    char _beginMarker[ 16 ];        ///< Debugging buffer showing chunk start in memory dump.
 #endif // NDEBUG
     HeapChunk_Region region;        ///< Memory region.
     struct HeapChunk_st* next;      ///< Next chunk in the list.
@@ -62,7 +62,7 @@ void HeapChunk_Release( HeapChunk* chunk, OnMemoryRelease_fn fn );
  *
  * @return void* Address
  */
-void* HeapChunk_GetFirstAfterChunk( HeapChunk* chunk );
+void* HeapChunk_GetFirstAfterChunk( HeapChunk* chunk, size_t alignment );
 
 /**
  * @brief Check if avaliable memory \p avaliableMemory is enogh
