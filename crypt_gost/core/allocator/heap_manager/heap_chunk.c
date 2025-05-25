@@ -1,19 +1,25 @@
 
 #include <assert.h>
+#include <stdalign.h>
 #include <string.h>
 
 #include <core/allocator/heap_manager/heap_chunk.h>
 
 #include "ptr_helper.h"
 
-#define HEAP_CHUNK_BEGIN_STRING "HeapChunk begin"
-#define HEAP_CHUNK_END_STRING   "HeapChunk end"
+#define HEAP_CHUNK_BEGIN_STRING             "HeapChunk begin"
+#define HEAP_CHUNK_END_STRING               "HeapChunk end"
+
+#define ASSERT_ALIGNED_AS( chunk, type )    assert( ( ( size_t )( chunk ) % _Alignof( type ) ) == 0 )
+#define ASSERT_ALIGNED_CHUNK( chunk )       ASSERT_ALIGNED_AS( chunk, HeapChunk )
+#define ASSERT_ALIGNMENT( ptr, algn )       assert( ( size_t( ptr ) % algn ) == 0 )
 
 static size_t _HeapChunk_TotalMemoryInUse( void* ptr, size_t chunkSize, size_t alignment );
 
 HeapChunk* HeapChunk_CreateAt( void* ptr, size_t chunkSize, size_t alignment )
 {
     assert( ptr );
+    ASSERT_ALIGNED_CHUNK( ptr );
 
     HeapChunk* chunk = ( HeapChunk* )ptr;
     memset( chunk, 0, sizeof( *chunk ) );
@@ -32,6 +38,7 @@ HeapChunk* HeapChunk_CreateAt( void* ptr, size_t chunkSize, size_t alignment )
 void HeapChunk_Release( HeapChunk* chunk, OnMemoryRelease_fn fn )
 {
     assert( chunk );
+    ASSERT_ALIGNED_CHUNK( chunk );
     assert( chunk->next == NULL );
     assert( chunk->prev == NULL );
 
@@ -41,24 +48,34 @@ void HeapChunk_Release( HeapChunk* chunk, OnMemoryRelease_fn fn )
     }
 }
 
-void* HeapChunk_GetFirstAfterChunk( HeapChunk* chunk )
+void* HeapChunk_GetFirstAfterChunk( HeapChunk* chunk, size_t alignment )
 {
+    void* ptr;
     assert( chunk );
+    ASSERT_ALIGNED_CHUNK( chunk );
     HeapChunk_AssertChunkMarkers( chunk );
-    return SHIFT_PTR_RIGHT( chunk->region.ptr, chunk->region.size );
+
+    ptr = SHIFT_PTR_RIGHT( chunk->region.ptr, chunk->region.size );
+    ptr = SHIFT_PTR_UPTO_ALIGNMENT( ptr, alignment );
+    return ptr;
 }
 
 int HeapChunk_CheckSize( size_t requiredChunkSize,
                          size_t alignment,
                          void* ptr,
-                         size_t avaliableMemory )
+                         size_t availableMemory )
 {
-    return _HeapChunk_TotalMemoryInUse( ptr, requiredChunkSize, alignment ) <= avaliableMemory;
+    assert( ptr );
+    ASSERT_ALIGNED_CHUNK( ptr );
+    return _HeapChunk_TotalMemoryInUse( ptr, requiredChunkSize, alignment ) <= availableMemory;
 }
 
 static size_t _HeapChunk_TotalMemoryInUse( void* ptr, size_t chunkSize, size_t alignment )
 {
     size_t totalSize = sizeof( HeapChunk ) + chunkSize;
+
+    ASSERT_ALIGNED_CHUNK( ptr );
+
     return totalSize
            + DIFF_UPTO_ALIGNMENT( SHIFT_PTR_RIGHT( ptr, sizeof( HeapChunk ) ), alignment );
 }
@@ -67,6 +84,7 @@ HeapChunk* HeapChunk_CutFromBegin( HeapChunk** chunk, size_t size, size_t alignm
 {
     assert( chunk );
     assert( *chunk );
+    ASSERT_ALIGNED_CHUNK( *chunk );
 
     const size_t totalUsedSize = _HeapChunk_TotalMemoryInUse( *chunk, size, alignment );
 
@@ -76,9 +94,10 @@ HeapChunk* HeapChunk_CutFromBegin( HeapChunk** chunk, size_t size, size_t alignm
         return NULL;
     }
 
-    void* rightBorder = HeapChunk_GetFirstAfterChunk( *chunk );
+    void* rightBorder = HeapChunk_GetFirstAfterChunk( *chunk, _Alignof( HeapChunk ) );
 
     HeapChunk* rightChunk = ( HeapChunk* )SHIFT_PTR_RIGHT( *chunk, totalUsedSize );
+    rightChunk = SHIFT_PTR_UPTO_ALIGNMENT( rightChunk, _Alignof( HeapChunk ) );
 
     // Shift chunk pointer from the beginning of chunk struct to struct size.
     rightChunk->region.ptr = SHIFT_PTR_RIGHT( rightChunk, sizeof( *rightChunk ) );
@@ -107,6 +126,7 @@ HeapChunk* HeapChunk_CutFromBegin( HeapChunk** chunk, size_t size, size_t alignm
 void HeapChunk_AssertChunkMarkers( HeapChunk* chunk )
 {
     assert( chunk );
+    ASSERT_ALIGNED_CHUNK( chunk );
 #ifndef NDEBUG
     assert(
         0
@@ -120,6 +140,7 @@ void HeapChunk_AssertChunkMarkers( HeapChunk* chunk )
 void HeapChunk_AddMarkers( HeapChunk* chunk )
 {
     assert( chunk );
+    ASSERT_ALIGNED_CHUNK( chunk );
 
 #ifndef NDEBUG
     strncpy( chunk->_beginMarker, HEAP_CHUNK_BEGIN_STRING, sizeof( chunk->_beginMarker ) );

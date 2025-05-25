@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdalign.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -114,12 +115,12 @@ inline void _HeapManager_CollectFragmentedChunks( HeapManager* manager )
     HeapChunk* cur = manager->avaliableChunks.head;
     for( ; cur->next; )
     {
-        if( cur->next == HeapChunk_GetFirstAfterChunk( cur ) )
+        if( cur->next == HeapChunk_GetFirstAfterChunk( cur, _Alignof( HeapChunk ) ) )
         {
             HeapChunk* rightMergedChunk = cur->next;
             _HeapManager_ReleaseAvaliableChunk( manager, rightMergedChunk );
             cur->region.size =
-                PTR_DIFF( cur->region.ptr, HeapChunk_GetFirstAfterChunk( rightMergedChunk ) );
+                PTR_DIFF( cur->region.ptr, HeapChunk_GetFirstAfterChunk( rightMergedChunk, _Alignof( HeapChunk ) ) );
         }
         else
         {
@@ -170,15 +171,18 @@ static inline void _HeapManager_SortAvaliableChunks( HeapManager* manager )
 HeapManager* HeapManager_Initialize( void* ptr, size_t heapSize, OnMemoryRelease_fn cb )
 {
     assert( ptr );
-    HeapManager* manager = ( HeapManager* )ptr;
+    HeapManager* manager = SHIFT_PTR_UPTO_ALIGNMENT( ptr, _Alignof( HeapManager ) );
 
     memset( manager, 0, sizeof( *manager ) );
 
-    manager->heap = ptr + sizeof( HeapManager );
-    manager->heapSize = heapSize - sizeof( HeapManager );
+    manager->heap = manager + sizeof( HeapManager );
+    manager->heap = SHIFT_PTR_UPTO_ALIGNMENT( manager->heap, _Alignof( HeapChunk ) );
+    manager->heapSize = heapSize - ( PTR_DIFF( ptr, manager + sizeof( HeapManager ) ) );
 
-    HeapChunk* initFreeChunk =
-        HeapChunk_CreateAt( manager->heap, manager->heapSize - sizeof( HeapChunk ), 0 );
+    void* chunkAddres = SHIFT_PTR_UPTO_ALIGNMENT( manager->heap, _Alignof( HeapChunk ) );
+    size_t chunkMemSize =
+        manager->heapSize - PTR_DIFF( manager->heap, chunkAddres ) - sizeof( HeapChunk );
+    HeapChunk* initFreeChunk = HeapChunk_CreateAt( chunkAddres, chunkMemSize, 0 );
     initFreeChunk->prev = NULL;
     initFreeChunk->next = NULL;
 

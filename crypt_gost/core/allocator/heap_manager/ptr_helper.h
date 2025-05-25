@@ -1,14 +1,20 @@
 #pragma once
 
 #include <stdlib.h>
+#include <stdalign.h>
 
 // clang-format off
 
 static inline size_t DIFF_UPTO_ALIGNMENT( void* ptr, size_t algn )
 {
-    return algn ?
-           algn - ( ( size_t )ptr % algn ) :
-           0;
+    if( algn )
+    {
+        if( ( size_t )ptr % algn )
+        {
+            return algn - ( (size_t)ptr % algn );
+        }
+    }
+    return 0;
 }
 
 static inline size_t PTR_DIFF( void* left, void* right )
