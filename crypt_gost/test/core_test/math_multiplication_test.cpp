@@ -17,8 +17,8 @@ TEST_P( MultiplicationTest, Multiplication )
 {
     LongNumber< 128 > a{ std::get< 0 >( GetParam() ) };
     uint32_t bVal = std::get< 1 >( GetParam() );
-    LongNumber< 128 > b = bVal;
-    LongNumber< 128 > expected = 0;
+    LongNumber< 128 > b( static_cast< size_t >( bVal ) );
+    LongNumber< 128 > expected( static_cast< size_t >( 0ul ) );
     LongNumber< 128 > mult;
 
     for( uint32_t i = 0; i < bVal; ++i )

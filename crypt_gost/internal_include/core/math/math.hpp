@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <cstring>
 #include <core/allocator/heap_allocator.hpp>
+#include <core/allocator/stack_allocator.hpp>
 #include <core/util/mem_buf.hpp>
 
 #include <core/util/traits.hpp>
@@ -55,8 +56,8 @@ struct is_power_of_two
 template < size_t bitSize,
            typename T = uint64_t,
            std::enable_if_t< sfinae::is_power_of_two< bitSize >::value, bool > = true,
-           std::enable_if_t< std::is_integral< T >::value, bool > = true,
-           std::enable_if_t< std::is_unsigned< T >::value, bool > = true >
+           std::enable_if_t< std::is_integral_v< T >, bool > = true,
+           std::enable_if_t< std::is_unsigned_v< T >, bool > = true >
 class LongNumber final
 {
 public:
@@ -66,13 +67,12 @@ public:
         , buf_( bitSize / 8, 8, alloc )
         , isZero_( true )
     {
-        bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
-
         [[unlikely]] if( bytes.size() != bitSize / 8 )
         {
             throw std::runtime_error( "Invalid byte sequence size" );
         }
 
+        bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
         std::memcpy( bytes_.byte, bytes.begin(), bitSize / 8 );
         if( !CheckIsZero() )
         {
@@ -80,7 +80,7 @@ public:
         }
     };
 
-    LongNumber( T value = 0, I_Allocator& alloc = HeapAllocator::GetInstance() )
+    explicit LongNumber( const T& value = 0, I_Allocator& alloc = HeapAllocator::GetInstance() )
         : bytes_()
         , buf_( bitSize / 8, 4, alloc )
         , isZero_( value == 0 )
@@ -90,7 +90,22 @@ public:
         bytes_.word[ traits_.COUNT_OF_WORDS - 1 ] = value;
     };
 
-    ~LongNumber() = default;
+    explicit LongNumber( const uint8_t* bytes, I_Allocator& alloc = StackAllocator::GetInstance() )
+        : bytes_()
+        , buf_( bitSize / 8, 4, alloc )
+        , isZero_( true )
+    {
+        assert( bitSize % 8 == 0 );
+        [[unlikely]] if( !bytes )
+        {
+            throw std::runtime_error( "Bytes is nullptr" );
+        }
+        bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
+        std::memcpy( bytes_.byte, bytes, bitSize / 8 );
+        CheckIsZero();
+    }
+
+    ~LongNumber() noexcept = default;
 
     LongNumber( const LongNumber& other )
         : bytes_()
@@ -293,7 +308,14 @@ public:
         return os;
     }
 
+    [[nodiscard]]
+    const uint8_t* GetBytes() const noexcept
+    {
+        return static_cast< const uint8_t* >( buf_.GetBuf() );
+    }
+
 private:
+    [[nodiscard]]
     constexpr inline size_t BitSize() const noexcept
     {
         return bitSize;
@@ -336,7 +358,7 @@ private:
     {
         Bytes()
             : byte( nullptr ){};
-        uint8_t* byte;
+        unsigned char* byte;
         T* word;
     };
 
