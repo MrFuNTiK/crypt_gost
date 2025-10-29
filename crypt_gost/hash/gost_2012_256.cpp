@@ -245,20 +245,22 @@ private:
     static void L_Transform( uint8_t* data ) noexcept
     {
         uint64_t word = 0;
-        uint64_t res = 0;
-        memcpy( &word, data, 8 );
+        uint8_t buf[ BLOCK_SIZE ];
 
-        for( size_t i = 0; i < 64; ++i )
+        for( size_t i = 0; i < BLOCK_SIZE / 8; ++i )
         {
-            const uint64_t tmp = word ^ A_transposed[ i ];
-            uint64_t bitCtr = 0;
+            uint64_t res = 0;
+            memcpy( &word, data + ( i * BLOCK_SIZE / 8 ), 8 );
             for( size_t j = 0; j < 64; ++j )
             {
-                bitCtr += ( tmp & ( 1ull << j ) );
+                if( word & ( 1ull << j ) )
+                {
+                    res ^= A[ 63 - j ];
+                }
             }
-            res |= ( ( bitCtr % 2 ) << ( 63 - i ) );
+            memcpy( buf + ( i * BLOCK_SIZE / 8 ), &res, 8 );
         }
-        std::memcpy( data, &res, 8 );
+        std::memcpy( data, buf, BLOCK_SIZE );
     }
 
     static void X_Transform( const uint8_t* a, const uint8_t* b, uint8_t* c ) noexcept
@@ -316,7 +318,6 @@ public:
     static const size_t HASH_SIZE = 32;
 
 private:
-
 private: // GOST
     enum class State
     {
@@ -325,7 +326,11 @@ private: // GOST
         Finalized
     };
 
-    uint8_t h_[ BLOCK_SIZE ] = { 1 };
+    uint8_t h_[ BLOCK_SIZE ] = {
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    };
     uint8_t N_[ BLOCK_SIZE ] = { 0 };
     uint8_t Sigma_[ BLOCK_SIZE ] = { 0 };
 
@@ -372,11 +377,9 @@ private:
 
 GOST_34_11_2012_256::GOST_34_11_2012_256()
     : I_Hash( HashAlg::GOST_34_11_2012_256 )
-    , impl_( std::make_unique< GOST_34_11_2012_256::Impl >() )
-{};
+    , impl_( std::make_unique< GOST_34_11_2012_256::Impl >() ){};
 
-GOST_34_11_2012_256::~GOST_34_11_2012_256()
-{};
+GOST_34_11_2012_256::~GOST_34_11_2012_256(){};
 
 void GOST_34_11_2012_256::Update( const std::vector< uint8_t >& data )
 {
