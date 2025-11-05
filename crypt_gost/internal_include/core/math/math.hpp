@@ -86,7 +86,7 @@ public:
         , isZero_( value == 0 )
     {
         bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
-        memset( buf_.GetBuf(), 0, bitSize / 8 );
+        memset( bytes_.byte, 0, bitSize / 8 );
         bytes_.word[ traits_.COUNT_OF_WORDS - 1 ] = value;
     };
 

@@ -185,9 +185,10 @@ public:
         G_Transform( N_, h_, data, h_ );
         Add512( N_, VEC_512_, N_ );
         Add512( Sigma_, data, Sigma_ );
+        //numProcessed_ += BLOCK_SIZE;
     }
 
-    void Final( const uint8_t* data )
+    void Final( const uint8_t* data, size_t filled )
     {
         if( state_ != State::Processing )
         {
@@ -196,9 +197,12 @@ public:
         state_ = State::Finalized;
 
         G_Transform( N_, h_, data, h_ );
-        Add512( N_, VEC_512_, N_ );
+        numProcessed_ += filled;
+        numProcessed_ *= 8;
+        std::memcpy( VEC_NUM_PROCESSED, &numProcessed_, sizeof( numProcessed_ ) );
+        Add512( N_, VEC_NUM_PROCESSED, N_ );
         Add512( Sigma_, data, Sigma_ );
-        G_Transform( VEC_0, h_, N_, h_ );
+        G_Transform( VEC_0, h_, N_,     h_ );
         G_Transform( VEC_0, h_, Sigma_, h_ );
     }
 
@@ -214,8 +218,9 @@ public:
     static void DoPadding( uint8_t* block, size_t filled ) noexcept
     {
         uint8_t buffer[ BLOCK_SIZE ] = { 0 };
-        buffer[ BLOCK_SIZE - 1 ] = 1;
-        std::memcpy( buffer, block, BLOCK_SIZE - filled );
+        std::memset( buffer, 0, BLOCK_SIZE );
+        buffer[ filled ] = 1;
+        std::memcpy( buffer, block, filled );
         std::memcpy( block, buffer, BLOCK_SIZE );
     }
 
@@ -225,7 +230,6 @@ private:
         for( size_t i = 0; i < BLOCK_SIZE; ++i )
         {
             size_t PI_index = data[ i ];
-            assert( PI_index <= 255 );
             data[ i ] = PI_FORWARD[ PI_index ];
         }
     }
@@ -236,7 +240,6 @@ private:
         for( size_t i = 0; i < BLOCK_SIZE; ++i )
         {
             size_t newIndex = TAU_FORWARD[ i ];
-            assert( newIndex <= BLOCK_SIZE );
             buf[ newIndex ] = data[ i ];
         }
         std::memcpy( data, buf, BLOCK_SIZE );
@@ -250,7 +253,7 @@ private:
         for( size_t i = 0; i < BLOCK_SIZE / 8; ++i )
         {
             uint64_t res = 0;
-            memcpy( &word, data + ( i * BLOCK_SIZE / 8 ), 8 );
+            std::memcpy( &word, data + ( i * BLOCK_SIZE / 8 ), 8 );
             for( size_t j = 0; j < 64; ++j )
             {
                 if( word & ( 1ull << j ) )
@@ -258,7 +261,7 @@ private:
                     res ^= A[ 63 - j ];
                 }
             }
-            memcpy( buf + ( i * BLOCK_SIZE / 8 ), &res, 8 );
+            std::memcpy( buf + ( i * BLOCK_SIZE / 8 ), &res, 8 );
         }
         std::memcpy( data, buf, BLOCK_SIZE );
     }
@@ -271,23 +274,24 @@ private:
         }
     }
 
-    void E_transform( const uint8_t* K, const uint8_t* m, uint8_t* out ) noexcept
+    static void E_transform( const uint8_t* K, const uint8_t* m, uint8_t* out ) noexcept
     {
         uint8_t buffer[ BLOCK_SIZE ];
-        uint8_t K_out[ BLOCK_SIZE ];
+        uint8_t K_i[ BLOCK_SIZE ];
+        std::memcpy( K_i, K, BLOCK_SIZE );
         X_Transform( m, K, buffer );
         for( size_t i = 0; i < 12; ++i )
         {
             S_Transform( buffer );
             P_Transform( buffer );
             L_Transform( buffer );
-            K_transform( K, i, K_out );
-            X_Transform( buffer, K_out, buffer );
+            K_transform( K_i, i, K_i );
+            X_Transform( buffer, K_i, buffer );
         }
         std::memcpy( out, buffer, sizeof( buffer ) );
     }
 
-    void K_transform( const uint8_t* K, size_t iter, uint8_t* out ) noexcept
+    static void K_transform( const uint8_t* K, size_t iter, uint8_t* out ) noexcept
     {
         uint8_t buffer[ BLOCK_SIZE ];
         X_Transform( K, C[ iter ].data(), buffer );
@@ -297,7 +301,7 @@ private:
         std::memcpy( out, buffer, sizeof( buffer ) );
     }
 
-    void G_Transform( const uint8_t* N, const uint8_t* h, const uint8_t* m, uint8_t* out )
+    static void G_Transform( const uint8_t* N, const uint8_t* h, const uint8_t* m, uint8_t* out )
     {
         uint8_t buf[ BLOCK_SIZE ];
 
@@ -314,11 +318,10 @@ private:
     }
 
 public:
-    static const size_t BLOCK_SIZE = 64;
-    static const size_t HASH_SIZE = 32;
+    static constexpr size_t BLOCK_SIZE = 64;
+    static constexpr size_t HASH_SIZE = 32;
 
 private:
-private: // GOST
     enum class State
     {
         Inited = 0,
@@ -326,17 +329,22 @@ private: // GOST
         Finalized
     };
 
+    // clang-format off
     uint8_t h_[ BLOCK_SIZE ] = {
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     };
+    // clang-format on
     uint8_t N_[ BLOCK_SIZE ] = { 0 };
     uint8_t Sigma_[ BLOCK_SIZE ] = { 0 };
 
     uint8_t VEC_512_[ BLOCK_SIZE ] = { 0 };
     const uint8_t VEC_0[ BLOCK_SIZE ] = { 0 };
+    uint8_t VEC_NUM_PROCESSED[ BLOCK_SIZE ] = { 0 };
 
+    size_t numProcessed_ = 0;
     State state_ = State::Inited;
 };
 

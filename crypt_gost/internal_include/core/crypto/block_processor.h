@@ -56,7 +56,7 @@ public:
     void Final()
     {
         Processor::DoPadding( unprocessed.data, unprocessed.size );
-        processor.Final( unprocessed.data );
+        processor.Final( unprocessed.data, unprocessed.size );
     }
 
     void GetResult( uint8_t* result )
