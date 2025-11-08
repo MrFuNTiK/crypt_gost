@@ -13,29 +13,12 @@
 
 #include <core/util/traits.hpp>
 
-namespace crypt_gost
-{
-
-namespace core
-{
-
-namespace math
+namespace crypt_gost::core::math
 {
 
 using namespace crypt_gost::core::allocator;
 using namespace crypt_gost::core::util;
 using namespace crypt_gost::core;
-
-#ifdef CRYPT_GOST_HAS_BYTE_ORDERING
-#    ifdef CRYPT_GOST_LITTLE_ENDIAN
-#        define BYTE_SWAP( x ) traits::ChangeByteOrdering( ( x ) )
-#    elif defined( CRYPT_GOST_BIG_ENDIAN )
-#        define BYTE_SWAP( x ) ( x )
-#    endif
-#else
-static const bool IS_LITTLE_ENDIAN = traits::IsLittleEndian();
-#    define BYTE_SWAP( x ) ( IS_LITTLE_ENDIAN ? traits::ChangeByteOrdering( ( x ) ) : ( x ) )
-#endif
 
 namespace sfinae
 {
@@ -61,7 +44,7 @@ template < size_t bitSize,
 class LongNumber final
 {
 public:
-    explicit LongNumber( const std::initializer_list< uint8_t > bytes,
+    LongNumber( const std::initializer_list< uint8_t > bytes,
                          I_Allocator& alloc = HeapAllocator::GetInstance() )
         : bytes_()
         , buf_( bitSize / 8, 8, alloc )
@@ -102,7 +85,10 @@ public:
         }
         bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
         std::memcpy( bytes_.byte, bytes, bitSize / 8 );
-        CheckIsZero();
+        if( !CheckIsZero() )
+        {
+            ByteSwap();
+        }
     }
 
     ~LongNumber() noexcept = default;
@@ -205,8 +191,8 @@ public:
             return *this;
         }
 
-        size_t wordsShift = shift / traits::BitsNumberOf( bytes_.word[ 0 ] );
-        size_t perWordBitShift = shift % traits::BitsNumberOf( bytes_.word[ 0 ] );
+        size_t wordsShift = shift / traits::bit_length::BitsNumberOf( bytes_.word[ 0 ] );
+        size_t perWordBitShift = shift % traits::bit_length::BitsNumberOf( bytes_.word[ 0 ] );
 
         // memcpy for overlapping buffers is undefined behabiour, so copy in
         // cycle.
@@ -347,9 +333,13 @@ private:
 
     void ByteSwap() const noexcept
     {
-        for( size_t i = 0; i < traits_.COUNT_OF_WORDS; ++i )
+        using namespace traits::byte_order;
+        if( HostByteOrder() != Endian::BIG )
         {
-            bytes_.word[ i ] = BYTE_SWAP( bytes_.word[ i ] );
+            for( size_t i = 0; i < traits_.COUNT_OF_WORDS; ++i )
+            {
+                bytes_.word[ i ] = ChangeByteOrdering( bytes_.word[ i ] );
+            }
         }
     }
 
@@ -372,16 +362,12 @@ private:
 
     static constexpr Traits traits_{ bitSize,
                                      bitSize / 8,
-                                     bitSize / traits::BitsNumberOf< T >(),
-                                     traits::BitsNumberOf< T >() };
+                                     bitSize / traits::bit_length::BitsNumberOf< T >(),
+                                     traits::bit_length::BitsNumberOf< T >() };
 
     Bytes bytes_;
     util::MemBuf buf_;
     bool isZero_;
 };
 
-} // namespace math
-
-} // namespace core
-
-} // namespace crypt_gost
+} // namespace crypt_gost::core::math

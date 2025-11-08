@@ -1,6 +1,7 @@
 #include <crypt_gost/hash/gost_2012_256.hpp>
 #include <core/crypto/block_processor.h>
 #include <core/math/math.hpp>
+#include <core/util/traits.hpp>
 
 using namespace crypt_gost::hash;
 using namespace crypt_gost::core;
@@ -156,11 +157,20 @@ static constexpr uint64_t A_transposed[] = {
 
 [[maybe_unused]] static void Add512( const uint8_t* a, const uint8_t* b, uint8_t* c )
 {
+    using namespace util::traits::byte_order;
+    uint8_t a_buf[ 64 ];
+    uint8_t b_buf[ 64 ];
+    std::memcpy( a_buf, a, sizeof( a_buf ) );
+    std::memcpy( b_buf, b, sizeof( b_buf ) );
+    ChangeByteOrdering( a_buf, sizeof( a_buf) );
+    ChangeByteOrdering( b_buf, sizeof( b_buf) );
+
     // TODO: Implement simple stack allocator for LongNumber
-    const math::LongNumber< 512, uint64_t > a_{ a, allocator::HeapAllocator::GetInstance() };
-    const math::LongNumber< 512, uint64_t > b_{ b, allocator::HeapAllocator::GetInstance() };
+    const math::LongNumber< 512, uint8_t > a_{ a_buf, allocator::HeapAllocator::GetInstance() };
+    const math::LongNumber< 512, uint8_t > b_{ b_buf, allocator::HeapAllocator::GetInstance() };
     const auto result = a_ + b_;
     std::memcpy( c, result.GetBytes(), 64 );
+    ChangeByteOrdering( c, 64 );
 }
 
 } // namespace
@@ -175,11 +185,11 @@ public:
     ~GOST_34_11_2012_256__HASH_BLOCK() = default;
 
 public:
-    void ProcessBlock( const uint8_t* data ) noexcept
+    void ProcessBlock( const uint8_t* data )
     {
         if( state_ == State::Finalized )
         {
-            return; // TODO: exception
+            throw std::runtime_error( "Context is finalized" );
         }
         state_ = State::Processing;
         G_Transform( N_, h_, data, h_ );
@@ -190,9 +200,9 @@ public:
 
     void Final( const uint8_t* data, size_t filled )
     {
-        if( state_ != State::Processing )
+        if( state_ == State::Finalized )
         {
-            return; // TODO: exception
+            throw std::runtime_error( "Context is finalized" );
         }
         state_ = State::Finalized;
 
@@ -210,7 +220,7 @@ public:
     {
         if( state_ != State::Finalized )
         {
-            return; // TODO: exception
+            throw std::runtime_error( "Context is not finalized" );
         }
         std::memcpy( out, h_ + ( BLOCK_SIZE - HASH_SIZE ), HASH_SIZE );
     }
@@ -229,8 +239,7 @@ private:
     {
         for( size_t i = 0; i < BLOCK_SIZE; ++i )
         {
-            size_t PI_index = data[ i ];
-            data[ i ] = PI_FORWARD[ PI_index ];
+            data[ i ] = PI_FORWARD[ data[ i ] ];
         }
     }
 
@@ -305,7 +314,7 @@ private:
     {
         uint8_t buf[ BLOCK_SIZE ];
 
-        X_Transform( N, h, buf );
+        X_Transform( h, N, buf );
 
         S_Transform( buf );
         P_Transform( buf );
