@@ -2,10 +2,8 @@
 
 #include <cassert>
 #include <vector>
-#include <iostream>
 #include <functional>
 #include <iomanip>
-#include <cstdint>
 #include <cstring>
 #include <core/allocator/heap_allocator.hpp>
 #include <core/allocator/stack_allocator.hpp>
@@ -18,7 +16,7 @@ namespace crypt_gost::core::math
 
 using namespace crypt_gost::core::allocator;
 using namespace crypt_gost::core::util;
-using namespace crypt_gost::core;
+using namespace crypt_gost::core::util::traits;
 
 namespace sfinae
 {
@@ -45,8 +43,10 @@ class LongNumber final
 {
 public:
     LongNumber( const std::initializer_list< uint8_t > bytes,
-                         I_Allocator& alloc = HeapAllocator::GetInstance() )
-        : bytes_()
+                byte_order::Endian endian = byte_order::Endian::BIG,
+                I_Allocator& alloc = HeapAllocator::GetInstance() )
+        : initEndian_( endian )
+        , bytes_()
         , buf_( bitSize / 8, 8, alloc )
         , isZero_( true )
     {
@@ -59,12 +59,18 @@ public:
         std::memcpy( bytes_.byte, bytes.begin(), bitSize / 8 );
         if( !CheckIsZero() )
         {
-            ByteSwap();
+            using namespace byte_order;
+            if( initEndian_ != Endian::BIG )
+            {
+                ChangeByteOrdering( bytes_.byte, traits_.COUNT_OF_BYTES );
+            }
+            ChangeByteOrderInWords();
         }
     };
 
     explicit LongNumber( const T& value = 0, I_Allocator& alloc = HeapAllocator::GetInstance() )
-        : bytes_()
+        : initEndian_( traits::byte_order::Endian::BIG )
+        , bytes_()
         , buf_( bitSize / 8, 4, alloc )
         , isZero_( value == 0 )
     {
@@ -73,8 +79,11 @@ public:
         bytes_.word[ traits_.COUNT_OF_WORDS - 1 ] = value;
     };
 
-    explicit LongNumber( const uint8_t* bytes, I_Allocator& alloc = StackAllocator::GetInstance() )
-        : bytes_()
+    explicit LongNumber( const uint8_t* bytes,
+                         byte_order::Endian endian = byte_order::Endian::BIG,
+                         I_Allocator& alloc = StackAllocator::GetInstance() )
+        : initEndian_( endian )
+        , bytes_()
         , buf_( bitSize / 8, 4, alloc )
         , isZero_( true )
     {
@@ -87,14 +96,20 @@ public:
         std::memcpy( bytes_.byte, bytes, bitSize / 8 );
         if( !CheckIsZero() )
         {
-            ByteSwap();
+            using namespace byte_order;
+            if( initEndian_ != Endian::BIG )
+            {
+                ChangeByteOrdering( bytes_.byte, traits_.COUNT_OF_BYTES );
+            }
+            ChangeByteOrderInWords();
         }
     }
 
     ~LongNumber() noexcept = default;
 
     LongNumber( const LongNumber& other )
-        : bytes_()
+        : initEndian_( other.initEndian_ )
+        , bytes_()
         , buf_( other.buf_ )
         , isZero_( other.isZero_ )
     {
@@ -103,6 +118,7 @@ public:
 
     LongNumber& operator=( const LongNumber& other )
     {
+        initEndian_ = other.initEndian_;
         buf_ = other.buf_;
         bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
         isZero_ = other.isZero_;
@@ -110,7 +126,8 @@ public:
     }
 
     LongNumber( LongNumber&& other ) noexcept
-        : buf_( std::move( other.buf_ ) )
+        : initEndian_( other.initEndian_ )
+        , buf_( std::move( other.buf_ ) )
         , isZero_( other.isZero_ )
     {
         bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
@@ -282,27 +299,32 @@ public:
 
     friend std::ostream& operator<<( std::ostream& os, const LongNumber& number )
     {
-        number.ByteSwap();
-        for( size_t i = 0; i < number.traits_.COUNT_OF_BYTES - 1; ++i )
+        number.ChangeByteOrderInWords();
+        for( size_t i = 0; i < traits_.COUNT_OF_BYTES - 1; ++i )
         {
             os << std::setfill( '0' ) << std::setw( 2 ) << std::hex
                << static_cast< int >( number.bytes_.byte[ i ] ) << ":";
         }
         os << std::setfill( '0' ) << std::setw( 2 ) << std::hex
-           << static_cast< int >( number.bytes_.byte[ number.BitSize() / 8 - 1 ] ) << std::flush;
-        number.ByteSwap();
+           << static_cast< int >( number.bytes_.byte[ BitSize() / 8 - 1 ] ) << std::flush;
+        number.ChangeByteOrderInWords();
         return os;
     }
 
-    [[nodiscard]]
-    const uint8_t* GetBytes() const noexcept
+    void GetBytes( uint8_t* out ) const noexcept
     {
-        return static_cast< const uint8_t* >( buf_.GetBuf() );
+        ChangeByteOrderInWords();
+        std::memcpy( out, bytes_.byte, traits_.COUNT_OF_BYTES );
+        if( initEndian_ != byte_order::Endian::BIG )
+        {
+            byte_order::ChangeByteOrdering( out, traits_.COUNT_OF_BYTES );
+        }
+        ChangeByteOrderInWords();
     }
 
 private:
     [[nodiscard]]
-    constexpr inline size_t BitSize() const noexcept
+    static constexpr size_t BitSize() noexcept
     {
         return bitSize;
     }
@@ -331,7 +353,7 @@ private:
         return isZero_;
     }
 
-    void ByteSwap() const noexcept
+    void ChangeByteOrderInWords() const noexcept
     {
         using namespace traits::byte_order;
         if( HostByteOrder() != Endian::BIG )
@@ -365,6 +387,7 @@ private:
                                      bitSize / traits::bit_length::BitsNumberOf< T >(),
                                      traits::bit_length::BitsNumberOf< T >() };
 
+    traits::byte_order::Endian initEndian_;
     Bytes bytes_;
     util::MemBuf buf_;
     bool isZero_;

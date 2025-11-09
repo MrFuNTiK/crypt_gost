@@ -155,22 +155,24 @@ static constexpr uint64_t A_transposed[] = {
 
 // clang-format on
 
-[[maybe_unused]] static void Add512( const uint8_t* a, const uint8_t* b, uint8_t* c )
+void Add512( const uint8_t* a, const uint8_t* b, uint8_t* c )
 {
     using namespace util::traits::byte_order;
-    uint8_t a_buf[ 64 ];
-    uint8_t b_buf[ 64 ];
-    std::memcpy( a_buf, a, sizeof( a_buf ) );
-    std::memcpy( b_buf, b, sizeof( b_buf ) );
-    ChangeByteOrdering( a_buf, sizeof( a_buf) );
-    ChangeByteOrdering( b_buf, sizeof( b_buf) );
+
+    // uint8_t a_buf[ 64 ];
+    // uint8_t b_buf[ 64 ];
+    // std::memcpy( a_buf, a, sizeof( a_buf ) );
+    // std::memcpy( b_buf, b, sizeof( b_buf ) );
+    // ChangeByteOrdering( a_buf, sizeof( a_buf) );
+    // ChangeByteOrdering( b_buf, sizeof( b_buf) );
 
     // TODO: Implement simple stack allocator for LongNumber
-    const math::LongNumber< 512, uint8_t > a_{ a_buf, allocator::HeapAllocator::GetInstance() };
-    const math::LongNumber< 512, uint8_t > b_{ b_buf, allocator::HeapAllocator::GetInstance() };
+    const math::LongNumber< 512, uint8_t > a_{ a, Endian::LITTLE,allocator::HeapAllocator::GetInstance() };
+    const math::LongNumber< 512, uint8_t > b_{ b, Endian::LITTLE,allocator::HeapAllocator::GetInstance() };
     const auto result = a_ + b_;
-    std::memcpy( c, result.GetBytes(), 64 );
-    ChangeByteOrdering( c, 64 );
+    result.GetBytes( c );
+    // std::memcpy( c, result.GetBytes(), 64 );
+    // ChangeByteOrdering( c, 64 );
 }
 
 } // namespace
