@@ -1,7 +1,7 @@
-#include <crypt_gost/hash/gost_2012_256.hpp>
 #include <core/crypto/block_processor.h>
 #include <core/math/math.hpp>
 #include <core/util/traits.hpp>
+#include <crypt_gost/hash/gost_2012_256.hpp>
 
 using namespace crypt_gost::hash;
 using namespace crypt_gost::core;
@@ -30,6 +30,7 @@ static constexpr uint8_t PI_FORWARD[ 256 ] = {
     89,  166, 116, 210, 230, 244, 180, 192, 209, 102, 175, 194, 57,  75,  99,  182
 };
 
+[[maybe_unused]]
 static constexpr uint8_t PI_REVERSE[ 256 ] = { 
     165, 45,  50,  143, 14,  48,  56,  192, 84,  230, 158, 57,  85,  126, 82,  145,
     100, 3,   87,  90,  28,  96,  7,   24,  33,  114, 168, 209, 41,  198, 164, 63,
@@ -56,6 +57,7 @@ static constexpr uint8_t TAU_FORWARD[ 64 ] = {
     6,   14,  22,  30,  38,  46,  54,  62,  7,   15,  23,  31,  39,  47,  55,  63
 };
 
+[[maybe_unused]]
 static constexpr uint8_t TAU_REVERSE[ 64 ] = {
     0,   8,   16,  24,  32,  40,  48,  56,  1,   9,   17,  25,  33,  41,  49,  57,
     2,   10,  18,  26,  34,  42,  50,  58,  3,   11,  19,  27,  35,  43,  51,  59,
@@ -134,6 +136,7 @@ static constexpr uint64_t A[] = {
     0x07e095624504536c, 0x8d70c431ac02a736, 0xc83862965601dd1b, 0x641c314b2b8ee083
 };
 
+[[maybe_unused]]
 static constexpr uint64_t A_transposed[] = {
     0xb18285c0ba4f9506, 0x584142605da7ca83, 0x2ca021302e53e5c1, 0x16509098172972e0,
     0xba2a4d8c315b2c76, 0xec172386a2e2833d, 0xc7091403eb3e5418, 0x63040a81759f2a0c,
@@ -167,8 +170,12 @@ void Add512( const uint8_t* a, const uint8_t* b, uint8_t* c )
     // ChangeByteOrdering( b_buf, sizeof( b_buf) );
 
     // TODO: Implement simple stack allocator for LongNumber
-    const math::LongNumber< 512, uint8_t > a_{ a, Endian::LITTLE,allocator::HeapAllocator::GetInstance() };
-    const math::LongNumber< 512, uint8_t > b_{ b, Endian::LITTLE,allocator::HeapAllocator::GetInstance() };
+    const math::LongNumber< 512, uint8_t > a_{ a,
+                                               Endian::LITTLE,
+                                               allocator::HeapAllocator::GetInstance() };
+    const math::LongNumber< 512, uint8_t > b_{ b,
+                                               Endian::LITTLE,
+                                               allocator::HeapAllocator::GetInstance() };
     const auto result = a_ + b_;
     result.GetBytes( c );
     // std::memcpy( c, result.GetBytes(), 64 );
@@ -197,7 +204,7 @@ public:
         G_Transform( N_, h_, data, h_ );
         Add512( N_, VEC_512_, N_ );
         Add512( Sigma_, data, Sigma_ );
-        //numProcessed_ += BLOCK_SIZE;
+        // numProcessed_ += BLOCK_SIZE;
     }
 
     void Final( const uint8_t* data, size_t filled )
@@ -214,7 +221,7 @@ public:
         std::memcpy( VEC_NUM_PROCESSED, &numProcessed_, sizeof( numProcessed_ ) );
         Add512( N_, VEC_NUM_PROCESSED, N_ );
         Add512( Sigma_, data, Sigma_ );
-        G_Transform( VEC_0, h_, N_,     h_ );
+        G_Transform( VEC_0, h_, N_, h_ );
         G_Transform( VEC_0, h_, Sigma_, h_ );
     }
 
@@ -396,9 +403,9 @@ private:
 
 GOST_34_11_2012_256::GOST_34_11_2012_256()
     : I_Hash( HashAlg::GOST_34_11_2012_256 )
-    , impl_( std::make_unique< GOST_34_11_2012_256::Impl >() ){};
+    , impl_( std::make_unique< GOST_34_11_2012_256::Impl >() ) {};
 
-GOST_34_11_2012_256::~GOST_34_11_2012_256(){};
+GOST_34_11_2012_256::~GOST_34_11_2012_256() noexcept {};
 
 void GOST_34_11_2012_256::Update( const std::vector< uint8_t >& data )
 {

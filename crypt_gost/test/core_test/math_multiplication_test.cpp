@@ -44,7 +44,7 @@ TEST_P( MultiplicationTest, Multiplication )
 }
 
 // clang-format off
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     CoreTest, MultiplicationTest, ::testing::Combine(
         ::testing::Values(
             LongNumber<128>{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },

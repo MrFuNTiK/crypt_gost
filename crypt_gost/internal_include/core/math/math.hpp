@@ -50,7 +50,8 @@ public:
         , buf_( bitSize / 8, 8, alloc )
         , isZero_( true )
     {
-        [[unlikely]] if( bytes.size() != bitSize / 8 )
+        [[unlikely]]
+        if( bytes.size() != bitSize / 8 )
         {
             throw std::runtime_error( "Invalid byte sequence size" );
         }
@@ -68,7 +69,7 @@ public:
         }
     };
 
-    explicit LongNumber( const T& value = 0, I_Allocator& alloc = HeapAllocator::GetInstance() )
+    LongNumber( const T& value = 0, I_Allocator& alloc = HeapAllocator::GetInstance() )
         : initEndian_( traits::byte_order::Endian::BIG )
         , bytes_()
         , buf_( bitSize / 8, 4, alloc )
@@ -88,7 +89,9 @@ public:
         , isZero_( true )
     {
         assert( bitSize % 8 == 0 );
-        [[unlikely]] if( !bytes )
+
+        [[unlikely]]
+        if( !bytes )
         {
             throw std::runtime_error( "Bytes is nullptr" );
         }
@@ -197,7 +200,8 @@ public:
 
     LongNumber operator<<=( size_t shift ) noexcept
     {
-        [[unlikely]] if( isZero_ || shift == 0 )
+        [[unlikely]]
+        if( isZero_ || shift == 0 )
         {
             return *this;
         }
@@ -247,7 +251,8 @@ public:
 
     LongNumber operator*=( const LongNumber& other ) noexcept
     {
-        [[unlikely]] if( isZero_ || other.isZero_ )
+        [[unlikely]]
+        if( isZero_ || other.isZero_ )
         {
             memset( buf_.GetBuf(), 0, traits_.COUNT_OF_BYTES );
             return *this;
@@ -277,7 +282,8 @@ public:
         std::reference_wrapper< const LongNumber > left = *this;
         std::reference_wrapper< const LongNumber > right = other;
 
-        [[unlikely]] if( isZero_ || other.isZero_ )
+        [[unlikely]]
+        if( isZero_ || other.isZero_ )
         {
             return ret;
         }
@@ -369,7 +375,7 @@ private:
     union Bytes
     {
         Bytes()
-            : byte( nullptr ){};
+            : byte( nullptr ) {};
         unsigned char* byte;
         T* word;
     };

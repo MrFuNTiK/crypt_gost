@@ -68,7 +68,7 @@ TEST_F( MathTest, Shift )
 }
 
 // clang-format off
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     CoreTest, MathTest, ::testing::Values(
             //*
             test_param_t

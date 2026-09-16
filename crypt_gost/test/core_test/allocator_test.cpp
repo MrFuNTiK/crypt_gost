@@ -96,7 +96,7 @@ TEST_P( AllocatorTest, AllocatorTesting )
     allocator.Deallocate( ptr2 );
 }
 
-INSTANTIATE_TEST_CASE_P( CoreTest,
+INSTANTIATE_TEST_SUITE_P( CoreTest,
                          AllocatorTest,
                          ::testing::Combine( ::testing::Values( HeapAllocator::GetInstance,
                                                                 StackAllocator::GetInstance ),
