@@ -22,7 +22,7 @@ public:
         // Process data that stayed unprocessed in last call
         size_t numToCopy = Processor::BLOCK_SIZE - unprocessed.size;
         numToCopy = numToCopy > size ? size : numToCopy;
-        std::memcpy( unprocessed.data, data, numToCopy );
+        std::memcpy( unprocessed.data + unprocessed.size, data, numToCopy );
         unprocessed.size += numToCopy;
         size -= numToCopy;
         data += numToCopy;
