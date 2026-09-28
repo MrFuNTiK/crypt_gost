@@ -13,7 +13,7 @@ namespace hash
 enum class HashAlg
 {
     GOST_34_11_2012_256,
-    GOST_34_11_2012_512
+    GOST_34_11_2012_512,
 };
 
 class I_Hash

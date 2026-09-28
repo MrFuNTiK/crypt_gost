@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <stdexcept>
 
-using IniEntities = std::vector< IniSection >;
+using IniSections = std::vector< IniSection >;
 
 class IniConfig final
 {
@@ -19,30 +19,35 @@ public:
     void AddSection( const IniSection& section )
     {
         if( std::find_if(
-                entities_.begin(),
-                entities_.end(),
+                sections_.begin(),
+                sections_.end(),
                 [ section ]( const IniSection& it ) -> bool { return section.Name() == it.Name(); } )
-            != entities_.end() )
+            != sections_.end() )
         {
             throw std::logic_error( "already exists" );
         }
-        entities_.push_back( section );
+        sections_.push_back( section );
     }
 
     const IniSection& Section( const char* name ) const
     {
         auto found = std::find_if(
-            entities_.begin(),
-            entities_.end(),
+            sections_.begin(),
+            sections_.end(),
             [ name ]( const IniSection& enitity ) -> bool { return name == enitity.Name(); } );
 
-        if( found == entities_.end() )
+        if( found == sections_.end() )
         {
             throw std::runtime_error( "not found" );
         }
         return *found;
     }
 
+    const IniSections& Sections() const noexcept
+    {
+        return sections_;
+    }
+
 private:
-    IniEntities entities_;
+    IniSections sections_;
 };

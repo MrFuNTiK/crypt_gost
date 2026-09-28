@@ -3,7 +3,12 @@
 #include <cstring>
 #include <gtest/gtest.h>
 #include <crypt_gost/hash/gost_2012_256.hpp>
+#include <sstream>
 #include <vector>
+
+#include <ini/ini_config.hpp>
+#include <ini/ini_section.hpp>
+#include <ini/ini_parser.hpp>
 
 // clang-format off
 
@@ -33,6 +38,18 @@ TEST( Kat, Hash256 )
     std::reverse( DATA.begin(), DATA.end() );
     std::reverse( RESULT.begin(), RESULT.end() );
 
+    for( const auto& byte: DATA )
+    {
+        std::cout << byte;
+    }
+    std::cout << "\n\n" << std::endl;
+
+    for( const auto& byte: DATA )
+    {
+        std::cout << byte;
+    }
+    std::cout << "\n\n" << std::endl;
+
     crypt_gost::hash::GOST_34_11_2012_256 hash;
     std::vector< uint8_t > result;
     hash.Update( DATA.data(), DATA.size() );
@@ -40,3 +57,4 @@ TEST( Kat, Hash256 )
     hash.GetHash( result );
     ASSERT_EQ( 0, std::memcmp( result.data(), RESULT.data(), sizeof( RESULT ) ) );
 }
+
