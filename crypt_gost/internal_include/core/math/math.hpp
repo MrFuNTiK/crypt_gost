@@ -2,39 +2,21 @@
 
 #include <cassert>
 #include <vector>
-#include <iostream>
 #include <functional>
 #include <iomanip>
-#include <cstdint>
 #include <cstring>
 #include <core/allocator/heap_allocator.hpp>
+#include <core/allocator/stack_allocator.hpp>
 #include <core/util/mem_buf.hpp>
 
 #include <core/util/traits.hpp>
 
-namespace crypt_gost
-{
-
-namespace core
-{
-
-namespace math
+namespace crypt_gost::core::math
 {
 
 using namespace crypt_gost::core::allocator;
 using namespace crypt_gost::core::util;
-using namespace crypt_gost::core;
-
-#ifdef CRYPT_GOST_HAS_BYTE_ORDERING
-#    ifdef CRYPT_GOST_LITTLE_ENDIAN
-#        define BYTE_SWAP( x ) traits::ChangeByteOrdering( ( x ) )
-#    elif defined( CRYPT_GOST_BIG_ENDIAN )
-#        define BYTE_SWAP( x ) ( x )
-#    endif
-#else
-static const bool IS_LITTLE_ENDIAN = traits::IsLittleEndian();
-#    define BYTE_SWAP( x ) ( IS_LITTLE_ENDIAN ? traits::ChangeByteOrdering( ( x ) ) : ( x ) )
-#endif
+using namespace crypt_gost::core::util::traits;
 
 namespace sfinae
 {
@@ -55,45 +37,82 @@ struct is_power_of_two
 template < size_t bitSize,
            typename T = uint64_t,
            std::enable_if_t< sfinae::is_power_of_two< bitSize >::value, bool > = true,
-           std::enable_if_t< std::is_integral< T >::value, bool > = true,
-           std::enable_if_t< std::is_unsigned< T >::value, bool > = true >
+           std::enable_if_t< std::is_integral_v< T >, bool > = true,
+           std::enable_if_t< std::is_unsigned_v< T >, bool > = true >
 class LongNumber final
 {
 public:
-    explicit LongNumber( const std::initializer_list< uint8_t > bytes,
-                         I_Allocator& alloc = HeapAllocator::GetInstance() )
-        : bytes_()
+    LongNumber( const std::initializer_list< uint8_t > bytes,
+                byte_order::Endian endian = byte_order::Endian::BIG,
+                I_Allocator& alloc = HeapAllocator::GetInstance() )
+        : initEndian_( endian )
+        , bytes_()
         , buf_( bitSize / 8, 8, alloc )
         , isZero_( true )
     {
-        bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
-
-        [[unlikely]] if( bytes.size() != bitSize / 8 )
+        [[unlikely]]
+        if( bytes.size() != bitSize / 8 )
         {
             throw std::runtime_error( "Invalid byte sequence size" );
         }
 
+        bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
         std::memcpy( bytes_.byte, bytes.begin(), bitSize / 8 );
         if( !CheckIsZero() )
         {
-            ByteSwap();
+            using namespace byte_order;
+            if( initEndian_ != Endian::BIG )
+            {
+                ChangeByteOrdering( bytes_.byte, traits_.COUNT_OF_BYTES );
+            }
+            ChangeByteOrderInWords();
         }
     };
 
-    LongNumber( T value = 0, I_Allocator& alloc = HeapAllocator::GetInstance() )
-        : bytes_()
+    LongNumber( const T& value = 0, I_Allocator& alloc = HeapAllocator::GetInstance() )
+        : initEndian_( traits::byte_order::Endian::BIG )
+        , bytes_()
         , buf_( bitSize / 8, 4, alloc )
         , isZero_( value == 0 )
     {
         bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
-        memset( buf_.GetBuf(), 0, bitSize / 8 );
+        memset( bytes_.byte, 0, bitSize / 8 );
         bytes_.word[ traits_.COUNT_OF_WORDS - 1 ] = value;
     };
 
-    ~LongNumber() = default;
+    explicit LongNumber( const uint8_t* bytes,
+                         byte_order::Endian endian = byte_order::Endian::BIG,
+                         I_Allocator& alloc = StackAllocator::GetInstance() )
+        : initEndian_( endian )
+        , bytes_()
+        , buf_( bitSize / 8, 4, alloc )
+        , isZero_( true )
+    {
+        assert( bitSize % 8 == 0 );
+
+        [[unlikely]]
+        if( !bytes )
+        {
+            throw std::runtime_error( "Bytes is nullptr" );
+        }
+        bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
+        std::memcpy( bytes_.byte, bytes, bitSize / 8 );
+        if( !CheckIsZero() )
+        {
+            using namespace byte_order;
+            if( initEndian_ != Endian::BIG )
+            {
+                ChangeByteOrdering( bytes_.byte, traits_.COUNT_OF_BYTES );
+            }
+            ChangeByteOrderInWords();
+        }
+    }
+
+    ~LongNumber() noexcept = default;
 
     LongNumber( const LongNumber& other )
-        : bytes_()
+        : initEndian_( other.initEndian_ )
+        , bytes_()
         , buf_( other.buf_ )
         , isZero_( other.isZero_ )
     {
@@ -102,6 +121,7 @@ public:
 
     LongNumber& operator=( const LongNumber& other )
     {
+        initEndian_ = other.initEndian_;
         buf_ = other.buf_;
         bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
         isZero_ = other.isZero_;
@@ -109,7 +129,8 @@ public:
     }
 
     LongNumber( LongNumber&& other ) noexcept
-        : buf_( std::move( other.buf_ ) )
+        : initEndian_( other.initEndian_ )
+        , buf_( std::move( other.buf_ ) )
         , isZero_( other.isZero_ )
     {
         bytes_.byte = static_cast< uint8_t* >( buf_.GetBuf() );
@@ -179,7 +200,8 @@ public:
 
     LongNumber operator<<=( size_t shift ) noexcept
     {
-        [[unlikely]] if( isZero_ || shift == 0 )
+        [[unlikely]]
+        if( isZero_ || shift == 0 )
         {
             return *this;
         }
@@ -190,8 +212,8 @@ public:
             return *this;
         }
 
-        size_t wordsShift = shift / traits::BitsNumberOf( bytes_.word[ 0 ] );
-        size_t perWordBitShift = shift % traits::BitsNumberOf( bytes_.word[ 0 ] );
+        size_t wordsShift = shift / traits::bit_length::BitsNumberOf( bytes_.word[ 0 ] );
+        size_t perWordBitShift = shift % traits::bit_length::BitsNumberOf( bytes_.word[ 0 ] );
 
         // memcpy for overlapping buffers is undefined behabiour, so copy in
         // cycle.
@@ -229,7 +251,8 @@ public:
 
     LongNumber operator*=( const LongNumber& other ) noexcept
     {
-        [[unlikely]] if( isZero_ || other.isZero_ )
+        [[unlikely]]
+        if( isZero_ || other.isZero_ )
         {
             memset( buf_.GetBuf(), 0, traits_.COUNT_OF_BYTES );
             return *this;
@@ -259,7 +282,8 @@ public:
         std::reference_wrapper< const LongNumber > left = *this;
         std::reference_wrapper< const LongNumber > right = other;
 
-        [[unlikely]] if( isZero_ || other.isZero_ )
+        [[unlikely]]
+        if( isZero_ || other.isZero_ )
         {
             return ret;
         }
@@ -281,20 +305,32 @@ public:
 
     friend std::ostream& operator<<( std::ostream& os, const LongNumber& number )
     {
-        number.ByteSwap();
-        for( size_t i = 0; i < number.traits_.COUNT_OF_BYTES - 1; ++i )
+        number.ChangeByteOrderInWords();
+        for( size_t i = 0; i < traits_.COUNT_OF_BYTES - 1; ++i )
         {
             os << std::setfill( '0' ) << std::setw( 2 ) << std::hex
                << static_cast< int >( number.bytes_.byte[ i ] ) << ":";
         }
         os << std::setfill( '0' ) << std::setw( 2 ) << std::hex
-           << static_cast< int >( number.bytes_.byte[ number.BitSize() / 8 - 1 ] ) << std::flush;
-        number.ByteSwap();
+           << static_cast< int >( number.bytes_.byte[ BitSize() / 8 - 1 ] ) << std::flush;
+        number.ChangeByteOrderInWords();
         return os;
     }
 
+    void GetBytes( uint8_t* out ) const noexcept
+    {
+        ChangeByteOrderInWords();
+        std::memcpy( out, bytes_.byte, traits_.COUNT_OF_BYTES );
+        if( initEndian_ != byte_order::Endian::BIG )
+        {
+            byte_order::ChangeByteOrdering( out, traits_.COUNT_OF_BYTES );
+        }
+        ChangeByteOrderInWords();
+    }
+
 private:
-    constexpr inline size_t BitSize() const noexcept
+    [[nodiscard]]
+    static constexpr size_t BitSize() noexcept
     {
         return bitSize;
     }
@@ -323,11 +359,15 @@ private:
         return isZero_;
     }
 
-    void ByteSwap() const noexcept
+    void ChangeByteOrderInWords() const noexcept
     {
-        for( size_t i = 0; i < traits_.COUNT_OF_WORDS; ++i )
+        using namespace traits::byte_order;
+        if( HostByteOrder() != Endian::BIG )
         {
-            bytes_.word[ i ] = BYTE_SWAP( bytes_.word[ i ] );
+            for( size_t i = 0; i < traits_.COUNT_OF_WORDS; ++i )
+            {
+                bytes_.word[ i ] = ChangeByteOrdering( bytes_.word[ i ] );
+            }
         }
     }
 
@@ -335,8 +375,8 @@ private:
     union Bytes
     {
         Bytes()
-            : byte( nullptr ){};
-        uint8_t* byte;
+            : byte( nullptr ) {};
+        unsigned char* byte;
         T* word;
     };
 
@@ -350,16 +390,13 @@ private:
 
     static constexpr Traits traits_{ bitSize,
                                      bitSize / 8,
-                                     bitSize / traits::BitsNumberOf< T >(),
-                                     traits::BitsNumberOf< T >() };
+                                     bitSize / traits::bit_length::BitsNumberOf< T >(),
+                                     traits::bit_length::BitsNumberOf< T >() };
 
+    traits::byte_order::Endian initEndian_;
     Bytes bytes_;
     util::MemBuf buf_;
     bool isZero_;
 };
 
-} // namespace math
-
-} // namespace core
-
-} // namespace crypt_gost
+} // namespace crypt_gost::core::math

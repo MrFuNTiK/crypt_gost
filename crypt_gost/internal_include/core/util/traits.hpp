@@ -1,5 +1,9 @@
+#pragma once
+
 #include <type_traits>
-#include <cstdlib>
+#include <cstdint>
+#include <cassert>
+#include <cstddef>
 
 namespace crypt_gost
 {
@@ -12,23 +16,34 @@ namespace util
 
 namespace traits
 {
-
-template < typename T, std::enable_if_t< std::is_integral< T >::value, bool > = true >
-constexpr size_t BitsNumberOf() noexcept
+namespace byte_order
 {
-    return sizeof( T ) * 8;
-}
 
-template < typename T, std::enable_if_t< std::is_integral< T >::value, bool > = true >
-constexpr size_t BitsNumberOf( T value ) noexcept
+enum class Endian
 {
-    return sizeof( value ) * 8;
-}
+    LITTLE,
+    BIG
+};
 
 static inline bool IsLittleEndian() noexcept
 {
     int32_t a = 1;
     return *( int8_t* )( &a ) == 1;
+}
+
+[[maybe_unused]]
+static Endian HostByteOrder() noexcept
+{
+#ifdef CRYPT_GOST_HAS_BYTE_ORDERING
+# ifdef CRYPT_GOST_LITTLE_ENDIAN
+    return Endian::LITTLE;
+# elif defined( CRYPT_GOST_BIG_ENDIAN )
+    return Endian::BIG;
+# endif
+#else
+    static const Endian endian = byte_order::IsLittleEndian() ? Endian::LITTLE : Endian::BIG;
+    return endian;
+#endif
 }
 
 template < typename T, std::enable_if_t< std::is_integral< T >::value, bool > = true >
@@ -42,6 +57,34 @@ T ChangeByteOrdering( T number ) noexcept
     }
     return ret;
 }
+
+static inline void ChangeByteOrdering( uint8_t* bytes, size_t size ) noexcept
+{
+    assert( size % 2 == 0 );
+    for( size_t i = 0; i < size / 2; ++i )
+    {
+        std::swap( bytes[ i ], bytes[ size - i - 1 ] );
+    }
+}
+
+} // namespace byte_order
+
+namespace bit_length
+{
+
+template < typename T, std::enable_if_t< std::is_integral_v< T >, bool > = true >
+constexpr size_t BitsNumberOf() noexcept
+{
+    return sizeof( T ) * 8;
+}
+
+template < typename T, std::enable_if_t< std::is_integral_v< T >, bool > = true >
+constexpr size_t BitsNumberOf( T value ) noexcept
+{
+    return sizeof( value ) * 8;
+}
+
+} // namespace bit_length
 
 } // namespace traits
 
