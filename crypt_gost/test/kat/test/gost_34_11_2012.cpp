@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 #include <algorithm>
 #include <crypt_gost/hash/gost_2012_256.hpp>
+#include <crypt_gost/hash/gost_2012_512.hpp>
 #include <gtest/gtest.h>
 #include <iomanip>
 #include <memory>
@@ -33,6 +34,8 @@ std::unique_ptr< I_Hash > Fabric( HashAlg alg )
     {
     case crypt_gost::hash::HashAlg::GOST_34_11_2012_256:
         return std::make_unique< GOST_34_11_2012_256 >();
+    case crypt_gost::hash::HashAlg::GOST_34_11_2012_512:
+        return std::make_unique< GOST_34_11_2012_512 >();
     default:
         throw std::logic_error( "not supported" );
     }

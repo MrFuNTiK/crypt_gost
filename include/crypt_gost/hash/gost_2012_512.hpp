@@ -8,18 +8,18 @@ namespace crypt_gost
 namespace hash
 {
 
-class GOST_34_11_2012_256 final : public I_Hash
+class GOST_34_11_2012_512 final : public I_Hash
 {
 public:
-    static constexpr size_t HASH_SIZE = 32;
+    static constexpr size_t HASH_SIZE = 64;
 public:
     class Impl;
 
-    GOST_34_11_2012_256();
-    ~GOST_34_11_2012_256() noexcept;
+    GOST_34_11_2012_512();
+    ~GOST_34_11_2012_512() noexcept;
 
-    GOST_34_11_2012_256( const GOST_34_11_2012_256& ) = delete;
-    GOST_34_11_2012_256& operator=( const GOST_34_11_2012_256& ) = delete;
+    GOST_34_11_2012_512( const GOST_34_11_2012_512& ) = delete;
+    GOST_34_11_2012_512& operator=( const GOST_34_11_2012_512& ) = delete;
 
     void Update( const uint8_t* data, size_t size ) override;
     void Update( const std::vector< uint8_t >& data ) override;
