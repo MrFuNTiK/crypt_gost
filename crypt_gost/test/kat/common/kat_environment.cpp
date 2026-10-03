@@ -13,7 +13,7 @@ KAT_environment& KAT_environment::Instance()
 
 void KAT_environment::RegisterConfig( test_algo alg, IniConfig&& config )
 {
-    configs_[ alg ] = config;
+    configs_[ ToString(alg) ] = config;
 }
 
 void KAT_environment::LoadConfigs(const std::string& data_path)
@@ -32,11 +32,11 @@ void KAT_environment::LoadConfigs(const std::string& data_path)
         if(!test_ini_file.is_open()) {
             throw std::logic_error("file not exists");
         }
-        configs_[alg] = ParseIni(test_ini_file);
+        configs_[ToString(alg)] = ParseIni(test_ini_file);
     }
 }
 
 const IniConfig& KAT_environment::GetConfig( test_algo alg )
 {
-    return configs_[ alg ];
+    return configs_[ ToString(alg) ];
 }

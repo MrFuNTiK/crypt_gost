@@ -4,7 +4,9 @@
 #include <algorithm>
 #include <crypt_gost/hash/gost_2012_256.hpp>
 #include <gtest/gtest.h>
+#include <iomanip>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 
 #include "kat_utils.hpp"
@@ -41,16 +43,37 @@ std::string TestName( const IniSection& section )
     return section.Name();
 }
 
+namespace std
+{
+
+void PrintTo( const std::vector< uint8_t >& vec, std::ostream* os )
+{
+    *os << vec.size() / 2 << ":    ";
+    for( size_t i = 0; i < vec.size() - 1; ++i )
+    {
+        *os << std::setfill( '0' ) << std::setw( 2 ) << std::hex << static_cast< int >( vec[ i ] )
+            << ":";
+    }
+    *os << std::setfill( '0' ) << std::setw( 2 ) << std::hex
+        << static_cast< int >( vec[ vec.size() - 1 ] ) << std::flush;
+}
+
+} // namespace std
+
 class GOST_34_11_2012_test : public ::testing::TestWithParam< IniSection >
 {
+public:
     GOST_34_11_2012_test() = default;
 
     void SetUp() override
     {
         auto section = GetParam();
         data = ParseHex( section.Property( "data" ) );
-        result = ParseHex( section.Property( "hash" ) );
+        result = ParseHex( section.Property( "result" ) );
         hash = Fabric( FromString( section.Property( "hash_size" ) ) );
+
+        std::reverse( data.begin(), data.end() );
+        std::reverse( result.begin(), result.end() );
     }
 
 public:
@@ -58,6 +81,15 @@ public:
     std::vector< uint8_t > result;
     std::unique_ptr< I_Hash > hash;
 };
+
+TEST_P( GOST_34_11_2012_test, checkResult )
+{
+    std::vector< uint8_t > result;
+    hash->Update( data );
+    hash->Final();
+    hash->GetHash( result );
+    ASSERT_EQ( result, this->result );
+}
 
 INSTANTIATE_TEST_SUITE_P( KAT,
                           GOST_34_11_2012_test,

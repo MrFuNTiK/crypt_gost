@@ -30,9 +30,9 @@ std::vector< uint8_t > ParseHex( const std::string& str )
     }
 
     std::vector< uint8_t > res( str.size() / 2 );
-    for( size_t i = 0; i < str.size() / 2; i++ )
+    for( size_t i = 0; i < res.size(); ++i )
     {
-        res[ i ] = ( ::CharToByte(str[ i ]) << 4 ) | ::CharToByte(str[ i + 1 ]);
+        res[ i ] = ( ::CharToByte( str[ 2 * i ] ) << 4 ) | ::CharToByte( str[ 2 * i + 1 ] );
     }
     return res;
 }

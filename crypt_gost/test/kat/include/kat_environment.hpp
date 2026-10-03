@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <map>
 #include <stdexcept>
 #include "ini/ini_config.hpp"
 
@@ -10,6 +11,8 @@ enum test_algo : size_t
     GOST_34_11_2012 = BEGIN,
     COUNT,
 };
+
+using IniConfigs = std::map<std::string, IniConfig>;
 
 static inline test_algo& operator++( test_algo& algo )
 {
@@ -61,5 +64,5 @@ public:
     const IniConfig& GetConfig( test_algo alg );
 
 private:
-    std::array< IniConfig, test_algo::COUNT > configs_;
+    IniConfigs configs_;
 };
