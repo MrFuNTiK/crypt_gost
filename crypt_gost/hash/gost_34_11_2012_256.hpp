@@ -1,7 +1,6 @@
 #pragma once
 
 #include "crypt_gost/hash/gost_2012_256.hpp"
-#include "crypt_gost/hash/gost_2012_512.hpp"
 #include "gost_34_11_2012.hpp"
 
 namespace crypt_gost

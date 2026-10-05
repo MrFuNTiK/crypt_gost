@@ -85,7 +85,7 @@ public:
     std::unique_ptr< I_Hash > hash;
 };
 
-TEST_P( GOST_34_11_2012_test, checkResult )
+TEST_P( GOST_34_11_2012_test, ethalon )
 {
     std::vector< uint8_t > result;
     hash->Update( data );
@@ -94,8 +94,14 @@ TEST_P( GOST_34_11_2012_test, checkResult )
     ASSERT_EQ( result, this->result );
 }
 
+std::string TestNameGenerator( const ::testing::TestParamInfo< IniSection >& section )
+{
+    return section.param.Name();
+}
+
 INSTANTIATE_TEST_SUITE_P( KAT,
                           GOST_34_11_2012_test,
                           ::testing::ValuesIn( KAT_environment::Instance()
                                                    .GetConfig( test_algo::GOST_34_11_2012 )
-                                                   .Sections() ) );
+                                                   .Sections() ),
+                          TestNameGenerator );
