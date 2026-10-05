@@ -1,10 +1,10 @@
 #include <core/crypto/block_processor.h>
 #include <core/math/math.hpp>
 #include <core/util/traits.hpp>
-#include <crypt_gost/hash/gost_2012_512.hpp>
+#include <crypt_gost/crypto/hash/gost_2012_512.hpp>
 #include "gost_34_11_2012_512.hpp"
 
-using namespace crypt_gost::hash;
+using namespace crypt_gost::crypto::hash;
 using namespace crypt_gost::core;
 
 // clang-format off

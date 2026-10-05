@@ -5,7 +5,6 @@
 
 #include <core/math/math.hpp>
 #include <core/util/traits.hpp>
-#include <crypt_gost/hash/gost_2012_256.hpp>
 
 namespace crypt_gost
 {

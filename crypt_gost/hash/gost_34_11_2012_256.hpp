@@ -1,19 +1,19 @@
 #pragma once
 
-#include "crypt_gost/hash/gost_2012_256.hpp"
+#include <crypt_gost/crypto/hash/gost_2012_256.hpp>
 #include "gost_34_11_2012.hpp"
 
 namespace crypt_gost
 {
 
+namespace crypto
+{
+
 namespace hash
 {
 
-class GOST_34_11_2012_256__HASH_BLOCK final : public GOST_34_11_2012__HASH_BLOCK
+class GOST_34_11_2012_256__HASH_BLOCK final : public crypt_gost::hash::GOST_34_11_2012__HASH_BLOCK
 {
-private:
-    static constexpr size_t HASH_SIZE = 32;
-
 public:
     GOST_34_11_2012_256__HASH_BLOCK()
     {
@@ -27,5 +27,7 @@ public:
 };
 
 } // namespace hash
+
+} // namespace crypto
 
 } // namespace crypt_gost

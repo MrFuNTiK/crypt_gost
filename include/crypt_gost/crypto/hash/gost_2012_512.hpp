@@ -1,17 +1,21 @@
 #pragma once
 
-#include <crypt_gost/hash/i_hash.hpp>
+#include <crypt_gost/crypto/hash/i_hash.hpp>
 
 namespace crypt_gost
+{
+
+namespace crypto
 {
 
 namespace hash
 {
 
-class GOST_34_11_2012_512 final : public I_Hash
+class GOST_34_11_2012_512 final : public crypt_gost::crypto::hash::I_Hash
 {
 public:
     static constexpr size_t HASH_SIZE = 64;
+
 public:
     class Impl;
 
@@ -32,5 +36,7 @@ private:
 };
 
 } // namespace hash
+
+} // namespace crypto
 
 } // namespace crypt_gost

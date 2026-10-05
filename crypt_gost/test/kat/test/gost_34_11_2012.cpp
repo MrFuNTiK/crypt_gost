@@ -1,9 +1,9 @@
-#include "crypt_gost/hash/i_hash.hpp"
+#include <crypt_gost/crypto/hash/i_hash.hpp>
 #include <ini/ini_section.hpp>
 #include "gtest/gtest.h"
 #include <algorithm>
-#include <crypt_gost/hash/gost_2012_256.hpp>
-#include <crypt_gost/hash/gost_2012_512.hpp>
+#include <crypt_gost/crypto/hash/gost_2012_256.hpp>
+#include <crypt_gost/crypto/hash/gost_2012_512.hpp>
 #include <gtest/gtest.h>
 #include <iomanip>
 #include <memory>
@@ -12,7 +12,7 @@
 #include "kat_utils.hpp"
 #include <kat_environment.hpp>
 
-using namespace crypt_gost::hash;
+using namespace crypt_gost::crypto::hash;
 using namespace crypt_gost::test::kat;
 
 HashAlg FromString( const std::string& str )
@@ -32,9 +32,9 @@ std::unique_ptr< I_Hash > Fabric( HashAlg alg )
 {
     switch( alg )
     {
-    case crypt_gost::hash::HashAlg::GOST_34_11_2012_256:
+    case HashAlg::GOST_34_11_2012_256:
         return std::make_unique< GOST_34_11_2012_256 >();
-    case crypt_gost::hash::HashAlg::GOST_34_11_2012_512:
+    case HashAlg::GOST_34_11_2012_512:
         return std::make_unique< GOST_34_11_2012_512 >();
     default:
         throw std::logic_error( "not supported" );

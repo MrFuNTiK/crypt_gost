@@ -1,7 +1,7 @@
 #include <cassert>
-#include <crypt_gost/hash/i_hash.hpp>
+#include <crypt_gost/crypto/hash/i_hash.hpp>
 
-using namespace crypt_gost::hash;
+using namespace crypt_gost::crypto::hash;
 
 namespace
 {

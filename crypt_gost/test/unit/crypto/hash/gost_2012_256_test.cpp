@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
-#include <crypt_gost/hash/gost_2012_256.hpp>
+#include <crypt_gost/crypto/hash/gost_2012_256.hpp>
 
-using namespace crypt_gost::hash;
+using namespace crypt_gost::crypto::hash;
 
 class HashTest : public testing::Test
 {};
