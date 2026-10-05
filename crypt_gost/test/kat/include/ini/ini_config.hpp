@@ -4,7 +4,14 @@
 #include <vector>
 #include <stdexcept>
 
-using IniSections = std::map< std::string, IniSection >;
+using IniSections = std::map< std::string, crypt_gost::test::kat::IniSection >;
+
+namespace crypt_gost
+{
+namespace test
+{
+namespace kat
+{
 
 class IniConfig final
 {
@@ -35,10 +42,12 @@ public:
         return sections_;
     }
 
-    const std::vector<IniSection> SectionsList() const {
-        std::vector<IniSection> sections;
-        for(const auto& section : sections_) {
-            sections.push_back(section.second);
+    const std::vector< IniSection > SectionsList() const
+    {
+        std::vector< IniSection > sections;
+        for( const auto& section: sections_ )
+        {
+            sections.push_back( section.second );
         }
         return sections;
     }
@@ -46,3 +55,9 @@ public:
 private:
     IniSections sections_;
 };
+
+} // namespace kat
+
+} // namespace test
+
+} // namespace crypt_gost

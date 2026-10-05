@@ -5,18 +5,20 @@
 #include <fstream>
 #include <stdexcept>
 
-KAT_environment& KAT_environment::Instance()
+using namespace crypt_gost::test::kat;
+
+TestEnvironment& TestEnvironment::Instance()
 {
-    static KAT_environment env;
+    static TestEnvironment env;
     return env;
 }
 
-void KAT_environment::RegisterConfig( test_algo alg, IniConfig&& config )
+void TestEnvironment::RegisterConfig( test_algo alg, IniConfig&& config )
 {
     configs_[ ToString(alg) ] = config;
 }
 
-void KAT_environment::LoadConfigs(const std::string& data_path)
+void TestEnvironment::LoadConfigs(const std::string& data_path)
 {
     std::filesystem::path data_dir_path(data_path);
     if(data_dir_path.has_filename()) {
@@ -36,7 +38,7 @@ void KAT_environment::LoadConfigs(const std::string& data_path)
     }
 }
 
-const IniConfig& KAT_environment::GetConfig( test_algo alg )
+const IniConfig& TestEnvironment::GetConfig( test_algo alg )
 {
     return configs_[ ToString(alg) ];
 }

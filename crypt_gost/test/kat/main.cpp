@@ -12,7 +12,7 @@ static const std::vector<program_arg> ARGS = {
 
 int main( int argc, const char** argv )
 {
-    auto& env = KAT_environment::Instance();
+    auto& env = crypt_gost::test::kat::TestEnvironment::Instance();
     OptionsParser options_parser(ARGS);
     auto options = options_parser.ParseArgs(argc, argv);
     env.LoadConfigs(options[ARGS[0].name]);

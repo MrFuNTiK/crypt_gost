@@ -3,11 +3,19 @@
 #include <stdexcept>
 #include <string>
 #include <map>
-#include <algorithm>
 
 #include "ini_property.hpp"
 
 using IniProperties = std::map< std::string, std::string >;
+
+namespace crypt_gost
+{
+
+namespace test
+{
+
+namespace kat
+{
 
 class IniSection final
 {
@@ -56,3 +64,9 @@ private:
     std::string header_;
     IniProperties properties_;
 };
+
+} // namespace kat
+
+} // namespace test
+
+} // namespace crypt_gost

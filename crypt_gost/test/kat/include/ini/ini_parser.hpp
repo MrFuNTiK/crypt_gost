@@ -7,6 +7,14 @@
 #include <istream>
 #include <stdexcept>
 #include <string>
+#include <algorithm>
+
+namespace crypt_gost
+{
+namespace test
+{
+namespace kat
+{
 
 namespace trim
 {
@@ -104,7 +112,7 @@ static IniSection ParseEntity( std::istream& is, const std::string& header )
 static inline IniConfig ParseIni( std::istream& is )
 {
     IniConfig config;
-    while( !is.eof())
+    while( !is.eof() )
     {
         std::string line;
         std::getline( is, line );
@@ -124,3 +132,9 @@ static inline IniConfig ParseIni( std::istream& is )
 
     return config;
 }
+
+} // namespace kat
+
+} // namespace test
+
+} // namespace crypt_gost

@@ -1,9 +1,17 @@
 #pragma once
 
-#include <array>
 #include <map>
 #include <stdexcept>
 #include "ini/ini_config.hpp"
+
+namespace crypt_gost
+{
+
+namespace test
+{
+
+namespace kat
+{
 
 enum test_algo : size_t
 {
@@ -12,7 +20,7 @@ enum test_algo : size_t
     COUNT,
 };
 
-using IniConfigs = std::map<std::string, IniConfig>;
+using IniConfigs = std::map< std::string, IniConfig >;
 
 static inline test_algo& operator++( test_algo& algo )
 {
@@ -54,10 +62,10 @@ static inline const char* ToString( test_algo algo )
 
 // clang-format on
 
-class KAT_environment
+class TestEnvironment
 {
 public:
-    static KAT_environment& Instance();
+    static TestEnvironment& Instance();
     void SetUpByArgs( int argc, char** argv );
     void RegisterConfig( test_algo alg, IniConfig&& config );
     void LoadConfigs( const std::string& data_config_path );
@@ -66,3 +74,9 @@ public:
 private:
     IniConfigs configs_;
 };
+
+} // namespace kat
+
+} // namespace test
+
+} // namespace crypt_gost

@@ -7,13 +7,13 @@
 #include <gtest/gtest.h>
 #include <iomanip>
 #include <memory>
-#include <sstream>
 #include <stdexcept>
 
 #include "kat_utils.hpp"
 #include <kat_environment.hpp>
 
 using namespace crypt_gost::hash;
+using namespace crypt_gost::test::kat;
 
 HashAlg FromString( const std::string& str )
 {
@@ -101,7 +101,7 @@ std::string TestNameGenerator( const ::testing::TestParamInfo< IniSection >& sec
 
 INSTANTIATE_TEST_SUITE_P( KAT,
                           GOST_34_11_2012_test,
-                          ::testing::ValuesIn( KAT_environment::Instance()
+                          ::testing::ValuesIn( TestEnvironment::Instance()
                                                    .GetConfig( test_algo::GOST_34_11_2012 )
                                                    .SectionsList() ),
                           TestNameGenerator );
