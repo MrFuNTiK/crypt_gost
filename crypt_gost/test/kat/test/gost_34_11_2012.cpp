@@ -103,5 +103,5 @@ INSTANTIATE_TEST_SUITE_P( KAT,
                           GOST_34_11_2012_test,
                           ::testing::ValuesIn( KAT_environment::Instance()
                                                    .GetConfig( test_algo::GOST_34_11_2012 )
-                                                   .Sections() ),
+                                                   .SectionsList() ),
                           TestNameGenerator );

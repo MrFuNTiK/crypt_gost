@@ -2,12 +2,12 @@
 
 #include <stdexcept>
 #include <string>
-#include <vector>
+#include <map>
 #include <algorithm>
 
 #include "ini_property.hpp"
 
-using IniProperties = std::vector< IniProperty >;
+using IniProperties = std::map< std::string, std::string >;
 
 class IniSection final
 {
@@ -30,16 +30,11 @@ public:
 
     void AddProperty( const IniProperty& prop )
     {
-        const std::string& name = prop.name;
-        if( std::find_if(
-                properties_.begin(),
-                properties_.end(),
-                [ name ]( const IniProperty& prop ) -> bool { return name == prop.name; } )
-            != properties_.end() )
+        const auto item = properties_.emplace( prop.name, prop.value );
+        if( !item.second )
         {
-            throw std::logic_error( "already exists" );
+            throw std::logic_error( "Already exists" );
         }
-        properties_.push_back( prop );
     }
 
     const std::string& Name() const noexcept
@@ -49,15 +44,7 @@ public:
 
     const std::string& Property( const char* name ) const
     {
-        auto found = std::find_if(
-            properties_.begin(),
-            properties_.end(),
-            [ name ]( const IniProperty& prop ) -> bool { return name == prop.name; } );
-        if( found == properties_.end() )
-        {
-            throw std::runtime_error( "not found" );
-        }
-        return found->value;
+        return properties_.at( name );
     }
 
     size_t Count() const noexcept
