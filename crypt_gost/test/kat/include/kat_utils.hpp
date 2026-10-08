@@ -1,14 +1,13 @@
 #pragma once
 
-#include <sstream>
 #include <stdexcept>
-#include <string_view>
 #include <vector>
 #include <string>
 #include <cstdint>
 
 namespace
 {
+
 uint8_t CharToByte( const char ch )
 {
     if( ch >= '0' && ch <= '9' )
@@ -22,7 +21,7 @@ uint8_t CharToByte( const char ch )
 
 } // namespace
 
-std::vector< uint8_t > ParseHex( const std::string& str )
+static inline std::vector< uint8_t > ParseHex( const std::string& str )
 {
     if( str.size() % 2 )
     {

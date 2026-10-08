@@ -2,44 +2,20 @@
 #include <ini/ini_section.hpp>
 #include "gtest/gtest.h"
 #include <algorithm>
-#include <crypt_gost/crypto/hash/gost_2012_256.hpp>
-#include <crypt_gost/crypto/hash/gost_2012_512.hpp>
+#include <crypt_gost/crypto/hash/gost_34_11_2012_256.hpp>
+#include <crypt_gost/crypto/hash/gost_34_11_2012_512.hpp>
 #include <gtest/gtest.h>
 #include <iomanip>
 #include <memory>
-#include <stdexcept>
 
-#include "kat_utils.hpp"
+#include <kat_utils.hpp>
 #include <kat_environment.hpp>
+
+#include "../../util/gost_34_11_2012.hpp"
 
 using namespace crypt_gost::crypto::hash;
 using namespace crypt_gost::test::kat;
-
-HashAlg FromString( const std::string& str )
-{
-    if( str == "256" )
-    {
-        return HashAlg::GOST_34_11_2012_256;
-    }
-    else if( str == "512" )
-    {
-        return HashAlg::GOST_34_11_2012_512;
-    }
-    throw std::runtime_error( "undefined hash size" );
-}
-
-std::unique_ptr< I_Hash > Fabric( HashAlg alg )
-{
-    switch( alg )
-    {
-    case HashAlg::GOST_34_11_2012_256:
-        return std::make_unique< GOST_34_11_2012_256 >();
-    case HashAlg::GOST_34_11_2012_512:
-        return std::make_unique< GOST_34_11_2012_512 >();
-    default:
-        throw std::logic_error( "not supported" );
-    }
-}
+using namespace crypt_gost::test::hash;
 
 std::string TestName( const IniSection& section )
 {
@@ -73,7 +49,7 @@ public:
         auto section = GetParam();
         data = ParseHex( section.Property( "data" ) );
         result = ParseHex( section.Property( "result" ) );
-        hash = Fabric( FromString( section.Property( "hash_size" ) ) );
+        hash = Factory( FromString( section.Property( "hash_size" ) ) );
 
         std::reverse( data.begin(), data.end() );
         std::reverse( result.begin(), result.end() );

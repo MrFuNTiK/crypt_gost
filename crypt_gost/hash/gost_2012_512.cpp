@@ -1,7 +1,7 @@
 #include <core/crypto/block_processor.h>
 #include <core/math/math.hpp>
 #include <core/util/traits.hpp>
-#include <crypt_gost/crypto/hash/gost_2012_512.hpp>
+#include <crypt_gost/crypto/hash/gost_34_11_2012_512.hpp>
 #include "gost_34_11_2012_512.hpp"
 
 using namespace crypt_gost::crypto::hash;
@@ -63,12 +63,6 @@ void GOST_34_11_2012_512::Update( const uint8_t* data, size_t size )
 void GOST_34_11_2012_512::Final()
 {
     impl_->Final();
-}
-
-void GOST_34_11_2012_512::Final( std::vector< uint8_t >& hash )
-{
-    impl_->Final();
-    GetHash( hash );
 }
 
 void GOST_34_11_2012_512::GetHash( std::vector< uint8_t >& hash )
